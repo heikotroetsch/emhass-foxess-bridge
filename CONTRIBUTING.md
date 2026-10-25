@@ -13,7 +13,7 @@ scripts/develop    # local Home Assistant on http://localhost:8123
 
 The repository is test-driven. Write the failing test first, then the
 smallest change that makes it pass. Tiers and conventions are described in
-`docs/development-plan.md`.
+`docs/testing.md`, the design in `docs/architecture.md`.
 
 - `tests/unit`: planner and scheduler model, pure Python.
 - `tests/component`: the integration inside the Home Assistant test harness

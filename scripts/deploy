@@ -6,7 +6,7 @@
 set -e
 cd "$(dirname "$0")/.."
 [[ -f .env ]] && source .env
-: "${HA_SSH_HOST:?set HA_SSH_HOST, e.g. hassio@192.168.178.56}"
+: "${HA_SSH_HOST:?set HA_SSH_HOST, e.g. hassio@homeassistant.local}"
 TARGET=/homeassistant/custom_components/emhass_foxess_bridge
 rsync -a --delete --exclude '__pycache__' --rsync-path="sudo rsync" \
     custom_components/emhass_foxess_bridge/ "${HA_SSH_HOST}:${TARGET}/"

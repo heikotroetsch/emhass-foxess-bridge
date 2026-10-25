@@ -1,9 +1,13 @@
 """
 EMHASS FoxESS Bridge.
 
-Applies the battery plan computed by EMHASS to a FoxESS inverter's mode
-scheduler. The FoxESS cloud is reached through the ha-foxess-openapi
-integration, which owns the API key and the live sensors.
+Day-ahead battery optimisation in Home Assistant for Enpal solar systems
+(FoxESS H3 hybrid inverter and battery) on the Octopus Energy Germany
+dynamic tariff: EMHASS plans the charging, this integration applies the
+plan to the inverter's mode scheduler. The FoxESS cloud is reached through
+the ha-foxess-openapi integration, which owns the API key and the live
+sensors. Any FoxESS inverter with the mode scheduler and any price source
+EMHASS can read will work.
 """
 
 from __future__ import annotations

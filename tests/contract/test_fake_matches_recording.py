@@ -1,6 +1,6 @@
 """
 Tier 3: the fake ha-foxess-openapi used in the component tests must keep the
-shape of what the real integration produced at the parents' installation.
+shape of what the real integration produced at a real installation.
 
 The recordings in tests/fixtures/foxess_openapi were taken with
 scripts/record_contract.py (anonymised serial and station). If

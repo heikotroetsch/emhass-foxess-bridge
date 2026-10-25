@@ -12,6 +12,12 @@ It turns the EMHASS battery plan into FoxESS mode-scheduler groups and keeps
 the inverter in sync with the plan, through the FoxESS cloud. No Modbus
 wiring, no extra hardware.
 
+Built for **Enpal** solar systems, which ship a FoxESS H3 hybrid inverter and
+battery, together with the **Octopus Energy Germany dynamic tariff**: EMHASS
+does the day-ahead optimisation inside Home Assistant, the bridge applies it
+to the inverter. Any FoxESS inverter with the mode scheduler and any price
+source EMHASS can read will do.
+
 **Status: beta, in field testing** on an H3-5.0-E with a 17.3 kWh battery and
 a dynamic 15-minute tariff. The code is covered by unit, component and
 contract tests. Expect changes before 1.0.
@@ -227,7 +233,9 @@ scripts/deploy     # rsync to a HA OS host and restart, see .env.example
 scripts/release    # bump version, roll the changelog, tag
 ```
 
-Plan, decisions and field findings: [`docs/development-plan.md`](docs/development-plan.md).
+Architecture and design decisions: [`docs/architecture.md`](docs/architecture.md).
+Test tiers and scripts: [`docs/testing.md`](docs/testing.md).
+Measured FoxESS, EMHASS and Octopus behaviour: [`docs/foxess-scheduler-notes.md`](docs/foxess-scheduler-notes.md).
 Contributing: [`CONTRIBUTING.md`](CONTRIBUTING.md). Changes: [`CHANGELOG.md`](CHANGELOG.md).
 
 ## License
