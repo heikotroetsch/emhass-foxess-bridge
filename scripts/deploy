@@ -1,18 +1,25 @@
 #!/usr/bin/env bash
 # Copy the integration to a Home Assistant OS host over SSH, then restart HA.
-# Requires HA_SSH_HOST (user@host) and optionally HA_TOKEN for the restart call.
+# Requires HA_SSH_HOST (user@host); HA_URL and HA_TOKEN for the restart call.
+# /homeassistant is root-owned on HA OS, so rsync runs through sudo on the host
+# (the Advanced SSH & Web Terminal add-on allows passwordless sudo).
 set -e
 cd "$(dirname "$0")/.."
 [[ -f .env ]] && source .env
 : "${HA_SSH_HOST:?set HA_SSH_HOST, e.g. hassio@192.168.178.56}"
-rsync -av --delete --exclude '__pycache__' \
-    custom_components/emhass_foxess_bridge/ \
-    "${HA_SSH_HOST}:/homeassistant/custom_components/emhass_foxess_bridge/"
+TARGET=/homeassistant/custom_components/emhass_foxess_bridge
+rsync -a --delete --exclude '__pycache__' --rsync-path="sudo rsync" \
+    custom_components/emhass_foxess_bridge/ "${HA_SSH_HOST}:${TARGET}/"
+ssh "${HA_SSH_HOST}" "sudo chown -R root:root ${TARGET}"
+echo "deployed $(git rev-parse --short HEAD) to ${HA_SSH_HOST}:${TARGET}"
 if [[ -n "${HA_TOKEN:-}" ]]; then
-    HOST="${HA_SSH_HOST#*@}"
-    curl -s -o /dev/null -w "restart: HTTP %{http_code}\n" -X POST \
-        -H "Authorization: Bearer ${HA_TOKEN}" \
-        "http://${HOST}:8123/api/services/homeassistant/restart"
+    URL="${HA_URL:-http://${HA_SSH_HOST#*@}:8123}"
+    RESULT=$(curl -s -m 60 -X POST -H "Authorization: Bearer ${HA_TOKEN}" \
+        "${URL}/api/config/core/check_config")
+    echo "check_config: ${RESULT}"
+    [[ "${RESULT}" == *'"result":"valid"'* ]] || { echo "not restarting"; exit 1; }
+    curl -s -m 20 -o /dev/null -w "restart: HTTP %{http_code} (000 = connection dropped during restart, expected)\n" \
+        -X POST -H "Authorization: Bearer ${HA_TOKEN}" "${URL}/api/services/homeassistant/restart" || true
 else
     echo "HA_TOKEN not set: restart Home Assistant manually."
 fi
