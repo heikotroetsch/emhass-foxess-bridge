@@ -1,177 +1,177 @@
 # Development plan
 
 Test-driven, inside out: pure planning logic first, Home Assistant wiring
-second, real FoxESS API last. Every milestone ends with a green test run and
+second, the real system last. Every milestone ends with a green test run and
 one commit. Target: Home Assistant 2026.10.4 only.
 
-## Status (2026-10-25)
+## Decision log
+
+- **2026-10-25, afternoon.** Own FoxESS Open API client inside the bridge,
+  scheduler endpoints v0. Implemented through milestone 3, tagged
+  `direct-api-backend`.
+- **2026-10-25, evening.** Switch the backend to the HACS integration
+  [duquedaniel/ha-foxess-openapi](https://github.com/duquedaniel/ha-foxess-openapi)
+  (domain `foxess_openapi`) and to scheduler **V1** with `maxSoc`. Reasons:
+  maintained client with signature auto-detection, 34 sensors including the
+  kWh counters for the Energy dashboard, one API consumer per key. Costs:
+  errors arrive as `HomeAssistantError` text, dependency on a young project
+  (v0.1.2, one maintainer). The bridge keeps everything that makes it a
+  control loop: planner, diff, dry run, settle window, stale fallback, quota
+  pause.
+
+## Architecture after the switch
+
+- The bridge holds no API key. It needs `foxess_openapi` installed and
+  configured for the same inverter.
+- Backend calls, all with an explicit `device_sn`:
+  - `foxess_openapi.get_schedule` (`return_response`): raw result of
+    `/op/v1/device/scheduler/get`, keys `groups` and `maxGroupCount`. The
+    master flag is not in this response.
+  - `foxess_openapi.set_schedule` with `groups` (V1 fields `startHour`,
+    `startMinute`, `endHour`, `endMinute`, `workMode`, `minSocOnGrid`,
+    `fdSoc`, `fdPwr`, optional `maxSoc`, `enable` default 1) and
+    `enable_scheduler` (default true, sets the master flag afterwards).
+    Their validation rejects overlaps and `fdSoc < minSocOnGrid`.
+  - `foxess_openapi.disable_scheduler`: master flag off, groups untouched.
+- State read from their entities, found through the entity registry by unique
+  id `{sn}_<key>` on the device with identifiers `(foxess_openapi, sn)`:
+  schedule sensor (attributes `master_switch`, `groups`; polled every 30 min
+  and refreshed after every write), number `{sn}_minSocOnGrid`, sensor
+  `{sn}_api_remaining` (remaining daily quota).
+- Bridge entities attach to that same device.
+- Setup raises `ConfigEntryNotReady` until the `foxess_openapi` services are
+  registered, so start-up order does not matter.
+- Their power sensors are in kW and are not converted. EMHASS reads raw
+  states in W, so `examples/emhass/` provides template sensors.
+
+## Status (2026-10-25, evening)
 
 | Milestone | State |
 | --- | --- |
-| 1 Planner core | done, `tests/unit` |
-| 2 Apply loop | done, `tests/component/test_apply.py` |
-| 3 Options, services, diagnostics | done |
-| 4 Real API tests | written; tier 3 waits for `FOX_API_KEY` in `.env`, tier 4 not yet run |
-| 5 Field test | not started; `examples/emhass/` prepared |
-| 6 Release 0.1.0 | not started |
-
-Decisions taken while implementing, beyond the original text:
-
-- A step counts as grid charging only when EMHASS also plans grid import
-  (`sensor.p_grid_forecast`). `p_batt` alone cannot tell PV surplus charging
-  from grid charging and would force-charge from the grid at noon.
-- "Clear the groups" is implemented as disabling the mode scheduler master
-  flag rather than writing an empty group list, whose acceptance by the API
-  is unknown (tier 4 records it).
-- A missing plan right after a Home Assistant restart also clears the
-  schedule. Conservative, costs at most one 15-minute gap until EMHASS
-  publishes again.
-- Live power sensors are exposed in W because EMHASS reads raw states.
+| 1 Planner core | done; `maxSoc` field to add in 7 |
+| 2 Apply loop | done on the direct API; to be ported in 7 |
+| 3 Options, services, diagnostics | done on the direct API; to be ported in 7 |
+| 7 Backend swap | **next** |
+| 4 Real-system contract | redefined below, after 7 |
+| 5 Field test | after 4 |
+| 6 Release 0.1.0 | after 5 |
 
 ## Test pyramid
 
 | Tier | What | How it runs | Speed |
 | --- | --- | --- | --- |
 | 1 Unit | `planner.py`, `schedule.py` (no HA imports) | `pytest tests/unit` | ms |
-| 2 Component | API client, coordinator, entities, services, flows | HA test harness (`hass`, `aioclient_mock`, `freezer`) | < 1 s each |
-| 3 Contract | Real FoxESS Open API, read-only | `pytest -m contract`, needs `.env` | seconds, manual |
-| 4 Write cycle | Real API, write a schedule and restore | `pytest -m writes` with `FOX_ALLOW_WRITES=1` | manual, deliberate |
-| 5 Field | Parents' HA with EMHASS, dry-run then live | observation over days | weeks |
+| 2 Component | backend, coordinator, entities, services, flows | HA test harness against a fake `foxess_openapi` (services, device, entities) | < 1 s each |
+| 3 Contract | recordings from the parents' HA (entity registry, schedule sensor, `get_schedule` response) | `pytest -m contract`, fixtures recorded with `scripts/record_contract.py` | ms |
+| 4 Write cycle | one probe group through `foxess_openapi.set_schedule` on the real inverter | `scripts/write_cycle.py`, HA REST API, `HA_TOKEN` | manual, deliberate |
+| 5 Field | parents' HA with EMHASS, dry run then live | observation over days | weeks |
 
-CI runs tiers 1 and 2. Tiers 3 and 4 are skipped unless the environment
-variables are set.
+CI runs tiers 1 to 3. Tier 4 is a script, run by hand, its findings go into
+this file.
 
 ## TDD rules for this repo
 
 1. Write the failing test first, name it after the behaviour, not the method.
 2. Smallest change to green, then refactor with the suite green.
 3. Time is injected (`now` parameter or `freezer`), never read inside logic.
-4. Every real API response we rely on is recorded as a fixture and the
-   contract tests assert the fixture still matches reality.
-5. One commit per green step: `test: ...` for a red test, `feat: ...` once
-   green, `refactor: ...` for cleanups.
+   The `freezer` fixture freezes asyncio sleeps too: no real sleeps in
+   component tests.
+4. Every real response we rely on is recorded as a fixture and the contract
+   tests assert the fake used in tier 2 still has the shape of the recording.
+5. One commit per green step: `test:` for a red test, `feat:` once green,
+   `refactor:` for cleanups.
 
-## Milestone 1: planner core (pure Python)
-
-Module `planner.py` turns the EMHASS plan into charge windows; `schedule.py`
-models FoxESS scheduler groups and validates them.
+## Milestone 7: backend swap (next)
 
 Behaviours, in test order:
 
-- Parse `battery_scheduled_power` (list of `{date, p_batt_forecast}`) into
-  sorted, timezone-aware steps; reject unsorted or non-uniform steps.
-- Rolling 24 h horizon: FoxESS groups are time-of-day based and repeat
-  daily, so only steps in `[now, now + 24 h)` are considered. Each
-  time-of-day appears at most once. Steps before `now` are dropped.
-- Classify: `p_batt <= -charge_threshold_w` is a charge step. Everything
-  else is self-use in v1.
-- Merge consecutive charge steps into windows; snap to the 15-minute grid.
-- Drop windows shorter than `min_window_minutes`.
-- Split windows that cross midnight into two groups.
-- Cap at `max_groups` (8). When over the cap, keep the windows with the
-  most planned energy and log what was dropped.
-- Build groups: `ForceCharge`, `minSocOnGrid` from the inverter setting,
-  end minute inclusive (`02:00-03:59` style, to be confirmed in tier 4).
-- Validate groups: no overlap, within one day, on the grid.
-- Diff: `desired == current` is order-insensitive and ignores fields FoxESS
-  rewrites, so unchanged plans produce no write.
+1. `schedule.py`: `max_soc` (default 100) in `SchedulerGroup`, V1
+   `to_api`/`from_api`, `fd_soc >= min_soc_on_grid` in `validate_groups`,
+   `max_soc` part of the comparison for `ForceCharge`.
+2. `backend.py`: protocol `FoxBackend` with `async_read()` returning
+   scheduler flag, groups, `min_soc_on_grid` and remaining quota;
+   `async_write(groups, *, enable)`; `async_disable()`.
+   `OpenApiServiceBackend` implements it over the three services and the
+   entity registry. Rate-limit detection: `HomeAssistantError` text
+   containing `40400`, plus a reserve: no writes when `api_remaining` is
+   below 60.
+3. `tests/component/fake_foxess_openapi.py`: registers the three services
+   with their real field names (`get_schedule` with `SupportsResponse.ONLY`),
+   keeps groups and flag, counts calls, can lag (accept a write without
+   changing state) and fail (`HomeAssistantError("... 40400 ...")`), creates
+   the device and the schedule, min SoC and quota entities. Replaces the HTTP
+   fake.
+4. Config flow V2: `DeviceSelector` filtered to `foxess_openapi`, serial from
+   the device identifiers as unique id, the two EMHASS entities. Errors:
+   `foxess_openapi_missing`, `device_invalid`. No migration from V1 entries
+   (none exist outside this repo).
+5. `__init__.py`: delete `api.py`, `coordinator.py` and the live sensors,
+   `ConfigEntryNotReady` while the services are missing, schedule entities on
+   the shared device.
+6. `schedule_coordinator.py`: uses the backend; settle window, stale
+   fallback, dry run, pause until midnight stay as they are and keep their
+   tests, now asserting service call data instead of HTTP bodies.
+7. Services `apply_plan`, `clear_schedule`, `set_schedule` unchanged in
+   behaviour; `set_schedule` accepts `max_soc`.
+8. Diagnostics: resolved entity ids and the last backend read.
+9. Docs: README for the new architecture, `examples/emhass/` with W template
+   sensors on top of the `foxess_openapi` kW sensors, `hacs.json` and
+   README name the dependency.
 
-Fixture: `tests/fixtures/emhass_plan_winter_day.json`, a realistic 24 h plan
-with a 02:00-05:00 charge block and a short 13:00 block.
+Deliverable: suite green, direct-API code gone, hassfest and HACS validation
+green, `requirements_*` unchanged.
 
-Deliverable: `tests/unit/test_planner.py`, `tests/unit/test_schedule.py`,
-no Home Assistant imports in either module.
+## Milestone 4: real-system contract
 
-## Milestone 2: apply loop inside Home Assistant
+- `scripts/record_contract.py`: with `HA_URL` and `HA_TOKEN` from `.env`,
+  fetch the entity registry entries of the `foxess_openapi` device, the
+  schedule sensor state and a `get_schedule` response, anonymise serials,
+  write `tests/fixtures/foxess_openapi/*.json`.
+- `tests/contract/test_fake_matches_recording.py`: the fake's service
+  responses and entity attributes have the recorded key sets.
+- `scripts/write_cycle.py`: snapshot, `set_schedule` with one `ForceCharge`
+  probe `00:00-00:14` and `maxSoc: 100`, poll `get_schedule` until it shows
+  up, restore, verify, print findings. Skips before 02:00 local.
 
-- Coordinator subscribes to the EMHASS entity and to a 15-minute aligned
-  timer. Either event recomputes the plan for the rolling horizon.
-- `switch.bridge_enabled` (default off) and `switch.dry_run` (default on).
-  Nothing is written until both are set deliberately.
-- Idempotent apply: read current groups, diff, write only on change. After a
-  write, reads that disagree within 60 s are treated as stale, not as truth
-  (observed eventual consistency on FoxESS).
-- Stale plan fallback: if the EMHASS entity is unavailable or older than
-  `plan_max_age_hours`, clear the groups once so the inverter returns to
-  self-use, and raise `binary_sensor.plan_stale`.
-- Sensors: planned schedule (attributes carry the groups), active schedule
-  as read from the API, last apply time and result.
-- Rate-limit handling: on errno 40400 stop writing for the day and surface a
-  repair issue.
+Open questions this tier answers:
 
-Tests use `hass.states.async_set(...)` to publish fake EMHASS plans, the
-`freezer` fixture to move time, and `aioclient_mock` to assert the exact
-JSON written to `/op/v0/device/scheduler/enable`.
+1. End minute convention under V1: is `endMinute: 14` kept as written?
+2. Does V1 return `maxSoc` for groups written without it, and with which
+   value?
+3. How long until `get_schedule` reflects a write (settle window)?
 
-## Milestone 3: configuration and operations
-
-- Options flow: `charge_threshold_w`, `min_window_minutes`, `max_groups`,
-  `plan_max_age_hours`.
-- Services: `apply_plan` (force a run), `clear_schedule`, `set_schedule`
-  (raw groups, for experiments).
-- Diagnostics platform: redacted config, last plan, last groups written,
-  last API error.
-- Translations for every new string; `hassfest` and HACS validation green.
-
-## Milestone 4: real API tests
-
-`tests/integration/`, skipped unless `FOX_API_KEY` and `FOX_DEVICE_SN` are
-set (loaded from `.env`).
-
-Contract (read-only):
-
-- Device detail has the keys the integration reads and
-  `function.scheduler` is true.
-- Real-time query returns every variable in `REALTIME_VARIABLES`.
-- Scheduler flag and groups parse with the production client.
-- Access count is readable; the test prints remaining quota.
-
-Write cycle (`FOX_ALLOW_WRITES=1`):
-
-- Snapshot current groups and master flag.
-- Write a single `ForceCharge` group lying entirely in the past of the
-  current day (for example `00:00-00:14`), so it cannot trigger before the
-  restore.
-- Read back and settle the open questions below.
-- Restore the snapshot and verify the restore.
-
-Open questions this tier must answer:
-
-1. End minute convention: is `endMinute: 59` inclusive, as the FoxESS app
-   writes it?
-2. Behaviour outside any group while the scheduler is enabled: does the
-   inverter fall back to its base work mode, or is a full-day SelfUse base
-   group required?
-3. Does writing groups with `/scheduler/enable` switch the master flag on,
-   or is a separate `/scheduler/set` call needed?
-4. Does a ForceCharge group re-trigger on consecutive days on master 1.91 /
-   manager 1.81? Community reports say it fired once only on some H3
-   firmware; the rolling rewrite every 15 minutes is the mitigation.
+Question "does the groups write switch the master flag on" is answered by
+their code: `set_schedule` sets it when `enable_scheduler` is true. Behaviour
+outside any group and the daily re-trigger on master 1.91 remain field
+observations.
 
 ## Milestone 5: field test at the parents' installation
 
-Prerequisites outside this repo: `octopus_germany` for prices, EMHASS
-add-on with a 15-minute step, 17.3 kWh battery, 5 kW inverter limits,
-Open-Meteo PV forecast, and the two automations (`dayahead-optim` after the
-17:00 price publication, `naive-mpc-optim` every 15 minutes, `publish-data`).
-Example files live in `examples/emhass/`.
+Prerequisites outside this repo: `foxess_openapi` configured with the API
+key, `octopus_germany` for prices, EMHASS add-on with a 15-minute step and
+the `examples/emhass/` configuration (17.3 kWh, 5 kW, Open-Meteo, W template
+sensors, two automations), `.env` with `HA_SSH_HOST` and `HA_TOKEN`.
 
-1. Deploy with `scripts/deploy`, bridge enabled, dry-run on. Three to seven
-   days of shadow operation: compare the planned groups with what we would
-   have wanted by hand.
-2. Dry-run off. Acceptance over seven consecutive days: inverter groups
-   equal the planned groups within two minutes of every plan change, no
-   quota errors, SoC rises during every charge window.
-3. Energy dashboard rewired to the bridge sensors.
+1. Deploy with `scripts/deploy`, bridge enabled, dry run on. Three to seven
+   days of shadow operation: compare the planned groups with the cheapest
+   slots of the day.
+2. Dry run off. Acceptance over seven consecutive days: inverter groups equal
+   the planned groups within two minutes of every plan change, no quota
+   errors, SoC rises during every charge window.
+3. Energy dashboard on the `foxess_openapi` kWh counters.
 
 ## Milestone 6: release 0.1.0
 
 README with screenshots and the EMHASS example config, CHANGELOG, GitHub
-release tag, repository public, post in the EMHASS community thread.
+release tag, repository public, note in the ha-foxess-openapi and EMHASS
+communities.
 
 ## Later
 
-- Hold mode: map steps with `p_batt ~ 0` and grid import to `Backup`
-  (keep the battery for expensive hours).
+- `maxSoc` per window from `sensor.soc_batt_forecast` at the window end, so
+  partial charging follows the EMHASS plan instead of charging to 100 %.
+- Hold mode: map steps with `p_batt ~ 0` and grid import to `Backup`.
 - `ForceDischarge` for planned export, off by default.
-- Second backend behind the same planner (local Modbus).
+- Direct-API backend behind the same `FoxBackend` protocol, revived from the
+  tag `direct-api-backend`, for users who do not want a second integration.
+- Local Modbus backend.
