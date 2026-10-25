@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Copy the integration to a Home Assistant OS host over SSH, then restart HA.
+# Requires HA_SSH_HOST (user@host) and optionally HA_TOKEN for the restart call.
+set -e
+cd "$(dirname "$0")/.."
+[[ -f .env ]] && source .env
+: "${HA_SSH_HOST:?set HA_SSH_HOST, e.g. hassio@192.168.178.56}"
+rsync -av --delete --exclude '__pycache__' \
+    custom_components/emhass_foxess_bridge/ \
+    "${HA_SSH_HOST}:/homeassistant/custom_components/emhass_foxess_bridge/"
+if [[ -n "${HA_TOKEN:-}" ]]; then
+    HOST="${HA_SSH_HOST#*@}"
+    curl -s -o /dev/null -w "restart: HTTP %{http_code}\n" -X POST \
+        -H "Authorization: Bearer ${HA_TOKEN}" \
+        "http://${HOST}:8123/api/services/homeassistant/restart"
+else
+    echo "HA_TOKEN not set: restart Home Assistant manually."
+fi

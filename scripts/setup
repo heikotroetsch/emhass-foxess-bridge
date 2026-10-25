@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Create the local virtualenv with uv and install all dev requirements.
+set -e
+cd "$(dirname "$0")/.."
+uv venv --python 3.14 .venv
+uv pip install --python .venv/bin/python -r requirements_dev.txt

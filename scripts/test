@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Run the test suite inside the local virtualenv.
+set -e
+cd "$(dirname "$0")/.."
+.venv/bin/python -m pytest "$@"

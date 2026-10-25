@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Start a local Home Assistant with this integration loaded (http://localhost:8123).
+set -e
+cd "$(dirname "$0")/.."
+HASS="${PWD}/.venv/bin/hass"
+[[ -x "$HASS" ]] || HASS=hass
+if [[ ! -d "${PWD}/config" ]]; then
+    mkdir -p "${PWD}/config"
+    "$HASS" --config "${PWD}/config" --script ensure_config
+fi
+export PYTHONPATH="${PYTHONPATH}:${PWD}/custom_components"
+"$HASS" --config "${PWD}/config" --debug

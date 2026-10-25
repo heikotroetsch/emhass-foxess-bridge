@@ -1,0 +1,27 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Connect your FoxESS inverter",
+                "description": "Create an API key in FoxESS Cloud under User Profile > API Management. The device serial is the inverter SN shown under Devices.",
+                "data": {
+                    "api_key": "FoxESS Open API key",
+                    "device_sn": "Inverter serial number",
+                    "emhass_entity": "EMHASS battery plan sensor"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Could not reach the FoxESS Cloud API.",
+            "invalid_auth": "FoxESS rejected the API key.",
+            "device_not_found": "FoxESS does not know this serial number on the account that owns the API key.",
+            "rate_limited": "The FoxESS API request limit for today is exhausted. Try again after midnight.",
+            "invalid_response": "FoxESS rejected the request. Check the API key and serial number.",
+            "no_scheduler": "This inverter does not report mode scheduler support, so it cannot be controlled.",
+            "unknown": "Unexpected error."
+        },
+        "abort": {
+            "already_configured": "This inverter is already configured."
+        }
+    }
+}

@@ -1,0 +1,20 @@
+{
+  "errno": 0,
+  "msg": "Operation successful",
+  "result": [
+    {
+      "deviceSN": "60SH5TEST000001",
+      "time": "2026-10-25 19:14:27 CET+0100",
+      "datas": [
+        {"unit": "%", "name": "SoC", "variable": "SoC", "value": 9.0},
+        {"unit": "kW", "name": "Load Power", "variable": "loadsPower", "value": 0.681},
+        {"unit": "kW", "name": "GridConsumption Power", "variable": "gridConsumptionPower", "value": 0.681},
+        {"unit": "kW", "name": "FeedIn Power", "variable": "feedinPower", "value": 0.0},
+        {"unit": "kW", "name": "PVPower", "variable": "pvPower", "value": 0.0},
+        {"unit": "kW", "name": "Charge Power", "variable": "batChargePower", "value": 0.0},
+        {"unit": "kW", "name": "Discharge Power", "variable": "batDischargePower", "value": 0.0},
+        {"name": "Running State", "variable": "runningState", "value": "167"}
+      ]
+    }
+  ]
+}

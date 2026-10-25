@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -e
+cd "$(dirname "$0")/.."
+RUFF="${PWD}/.venv/bin/ruff"; [[ -x "$RUFF" ]] || RUFF=ruff
+"$RUFF" format .
+"$RUFF" check . --fix

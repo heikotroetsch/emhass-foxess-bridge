@@ -1,0 +1,11 @@
+{
+  "errno": 0,
+  "msg": "Operation successful",
+  "result": {
+    "enable": true,
+    "groups": [
+      {"enable": 1, "startHour": 2, "startMinute": 0, "endHour": 4, "endMinute": 59, "workMode": "ForceCharge", "minSocOnGrid": 10, "fdSoc": 10, "fdPwr": 0},
+      {"enable": 1, "startHour": 5, "startMinute": 0, "endHour": 23, "endMinute": 59, "workMode": "SelfUse", "minSocOnGrid": 10, "fdSoc": 10, "fdPwr": 0}
+    ]
+  }
+}
