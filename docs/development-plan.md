@@ -59,7 +59,7 @@ one commit. Target: Home Assistant 2026.10.4 only.
 | 2 Apply loop | done on the service backend |
 | 3 Options, services, diagnostics | done on the service backend |
 | 7 Backend swap | done 2026-10-25 (112 tests) |
-| 4 Real-system contract | recordings and `tests/contract` done; `scripts/write_cycle.py` ready, **not yet run** (needs Heiko's go) |
+| 4 Real-system contract | done: recordings, `tests/contract`, write cycle run twice on 2026-10-25 with Heiko's go, findings below |
 | 5 Field test | dry-run stage running at the parents' HA since 2026-10-25 23:01: bridge, EMHASS 0.18.7 (configured), W template sensors, REST commands and automations installed; EMHASS waits for sensor history, the plan waits for the dynamic tariff |
 | 6 Release 0.1.0 | after 5 |
 
@@ -140,17 +140,26 @@ green, `requirements_*` unchanged.
   probe `00:00-00:14` and `maxSoc: 100`, poll `get_schedule` until it shows
   up, restore, verify, print findings. Skips before 02:00 local.
 
-Open questions this tier answers:
+Findings from the write cycle (H3-5.0-E, master 1.91, 2026-10-25, probe
+`ForceCharge 10:00-10:14, maxSoc 100`, run twice, snapshot restored and
+verified both times):
 
-1. End minute convention under V1: is `endMinute: 14` kept as written?
-2. Does V1 return `maxSoc` for groups written without it, and with which
-   value?
-3. How long until `get_schedule` reflects a write (settle window)?
+1. **End minute is kept as written**: `endMinute: 14` comes back as 14, so
+   the inclusive convention (`02:00-04:59`) holds under V1.
+2. **`maxSoc` round-trips**: written 100, read 100. The cloud always returns
+   eight group slots; unused slots are disabled `SelfUse 00:00-00:00` groups
+   with `maxSoc 100`.
+3. **Settle times**: the groups are visible in `get_schedule` about 1 s
+   after `set_schedule`, the master flag about 11 s after. A read within
+   the first seconds therefore shows the groups with `enable: 0`; the
+   bridge's 60 s write-settle window covers this.
+4. **Master flag**: `set_schedule` with `enable_scheduler: true` does switch
+   the flag on (via `/op/v1/device/scheduler/set/flag`), `disable_scheduler`
+   switches it off, and `get_schedule` reports it as `enable`. The scheduler
+   switch entity of ha-foxess-openapi follows within its refresh.
 
-Question "does the groups write switch the master flag on" is answered by
-their code: `set_schedule` sets it when `enable_scheduler` is true. Behaviour
-outside any group and the daily re-trigger on master 1.91 remain field
-observations.
+Behaviour outside any group and the daily re-trigger on master 1.91 remain
+field observations.
 
 ## Milestone 5: field test at the parents' installation
 
