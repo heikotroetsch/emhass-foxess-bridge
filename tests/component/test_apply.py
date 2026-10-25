@@ -16,6 +16,7 @@ from custom_components.emhass_foxess_bridge.api import (
 from custom_components.emhass_foxess_bridge.const import (
     CONF_DRY_RUN,
     CONF_ENABLED,
+    CONF_MIN_WINDOW_MINUTES,
     DOMAIN,
     ISSUE_RATE_LIMITED,
 )
@@ -273,3 +274,19 @@ async def test_api_errors_are_reported_not_raised(
     assert state(hass, "sensor", "apply_result").state == "error"
     assert "41200" in state(hass, "sensor", "last_apply").attributes["detail"]
     assert state(hass, "sensor", "planned_schedule").state == "ForceCharge 02:00-04:59"
+
+
+async def test_planner_options_change_the_plan(
+    hass: HomeAssistant,
+    fox: FakeFoxCloud,
+    freezer: FrozenDateTimeFactory,
+    load_fixture: Callable,
+) -> None:
+    """A 15-minute minimum window lets the single cheap 13:00 slot through."""
+    freezer.move_to(PLAN_TIME)
+    publish_plan(hass, load_fixture)
+    await setup_bridge(hass, {CONF_MIN_WINDOW_MINUTES: 15})
+    await settle(hass, freezer)
+    assert state(hass, "sensor", "planned_schedule").state == (
+        "ForceCharge 02:00-04:59, ForceCharge 13:00-13:14"
+    )
