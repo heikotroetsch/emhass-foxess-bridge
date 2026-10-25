@@ -1,4 +1,4 @@
-"""Sensor platform: live inverter values and the state of the apply loop."""
+"""Sensor platform: the state of the apply loop."""
 
 from __future__ import annotations
 
@@ -8,9 +8,8 @@ from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
-    SensorStateClass,
 )
-from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfPower
+from homeassistant.const import EntityCategory
 
 from .entity import BridgeEntity
 from .schedule_coordinator import ApplyResult
@@ -22,60 +21,12 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-    from .coordinator import BridgeCoordinator
     from .data import BridgeConfigEntry
     from .schedule import SchedulerGroup
     from .schedule_coordinator import ScheduleCoordinator, ScheduleState
 
 MAX_STATE_LENGTH = 255
 
-
-# FoxESS reports power in kW. EMHASS reads raw sensor states and assumes W,
-# so the live power sensors are exposed in W.
-POWER_KEYS: frozenset[str] = frozenset(
-    {
-        "pvPower",
-        "loadsPower",
-        "gridConsumptionPower",
-        "feedinPower",
-        "batChargePower",
-        "batDischargePower",
-    }
-)
-KW_TO_W = 1000
-
-
-def _power(key: str, name: str) -> SensorEntityDescription:
-    return SensorEntityDescription(
-        key=key,
-        name=name,
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=0,
-    )
-
-
-LIVE_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
-    SensorEntityDescription(
-        key="SoC",
-        name="Battery SoC",
-        native_unit_of_measurement=PERCENTAGE,
-        device_class=SensorDeviceClass.BATTERY,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    _power("pvPower", "PV power"),
-    _power("loadsPower", "Load power"),
-    _power("gridConsumptionPower", "Grid import power"),
-    _power("feedinPower", "Grid export power"),
-    _power("batChargePower", "Battery charge power"),
-    _power("batDischargePower", "Battery discharge power"),
-    SensorEntityDescription(
-        key="runningState",
-        name="Running state",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-)
 
 PLANNED_SCHEDULE = SensorEntityDescription(
     key="planned_schedule", name="Planned schedule", icon="mdi:calendar-clock"
@@ -103,42 +54,16 @@ async def async_setup_entry(
     entry: BridgeConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Create the live sensors and the schedule sensors."""
-    runtime = entry.runtime_data
-    entities: list[SensorEntity] = [
-        LiveSensor(runtime.coordinator, description)
-        for description in LIVE_DESCRIPTIONS
-    ]
-    entities += [
-        ScheduleSensor(runtime.schedule, PLANNED_SCHEDULE, lambda s: s.planned),
-        ScheduleSensor(runtime.schedule, ACTIVE_SCHEDULE, lambda s: s.active),
-        ApplyResultSensor(runtime.schedule),
-        LastApplySensor(runtime.schedule),
-    ]
-    async_add_entities(entities)
-
-
-class LiveSensor(BridgeEntity["BridgeCoordinator"], SensorEntity):
-    """A single real-time value from the inverter."""
-
-    def __init__(
-        self, coordinator: BridgeCoordinator, description: SensorEntityDescription
-    ) -> None:
-        """Bind the description to the coordinator."""
-        super().__init__(coordinator, description.key)
-        self.entity_description = description
-
-    @property
-    def native_value(self) -> float | str | None:
-        """Return the latest value for this variable, power converted to W."""
-        key = self.entity_description.key
-        value = self.coordinator.data.get(key)
-        if key in POWER_KEYS and value is not None:
-            try:
-                return round(float(value) * KW_TO_W, 1)
-            except TypeError, ValueError:
-                return None
-        return value
+    """Create the schedule sensors."""
+    schedule = entry.runtime_data.schedule
+    async_add_entities(
+        [
+            ScheduleSensor(schedule, PLANNED_SCHEDULE, lambda s: s.planned),
+            ScheduleSensor(schedule, ACTIVE_SCHEDULE, lambda s: s.active),
+            ApplyResultSensor(schedule),
+            LastApplySensor(schedule),
+        ]
+    )
 
 
 def _summarise(groups: tuple[SchedulerGroup, ...]) -> str:
@@ -148,7 +73,7 @@ def _summarise(groups: tuple[SchedulerGroup, ...]) -> str:
     return text
 
 
-class ScheduleSensor(BridgeEntity["ScheduleCoordinator"], SensorEntity):
+class ScheduleSensor(BridgeEntity, SensorEntity):
     """Human readable schedule; the groups travel in the attributes."""
 
     def __init__(
@@ -179,7 +104,7 @@ class ScheduleSensor(BridgeEntity["ScheduleCoordinator"], SensorEntity):
         return attributes
 
 
-class ApplyResultSensor(BridgeEntity["ScheduleCoordinator"], SensorEntity):
+class ApplyResultSensor(BridgeEntity, SensorEntity):
     """Outcome of the last apply run."""
 
     entity_description = APPLY_RESULT
@@ -206,10 +131,11 @@ class ApplyResultSensor(BridgeEntity["ScheduleCoordinator"], SensorEntity):
                 if data.writes_blocked_until
                 else None
             ),
+            "api_remaining": data.api_remaining,
         }
 
 
-class LastApplySensor(BridgeEntity["ScheduleCoordinator"], SensorEntity):
+class LastApplySensor(BridgeEntity, SensorEntity):
     """When the apply loop last ran."""
 
     entity_description = LAST_APPLY

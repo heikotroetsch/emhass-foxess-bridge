@@ -8,11 +8,13 @@ LOGGER: Logger = getLogger(__package__)
 
 DOMAIN = "emhass_foxess_bridge"
 NAME = "EMHASS FoxESS Bridge"
-ATTRIBUTION = "Data from the FoxESS Cloud Open API"
+ATTRIBUTION = "Schedule written through the FoxESS Cloud Open API integration"
+
+# The integration that owns the API key and talks to the FoxESS cloud.
+FOX_DOMAIN = "foxess_openapi"
 
 # Config entry data
-CONF_API_KEY = "api_key"
-CONF_DEVICE_SN = "device_sn"
+CONF_DEVICE_ID = "device_id"
 CONF_EMHASS_ENTITY = "emhass_entity"
 CONF_EMHASS_GRID_ENTITY = "emhass_grid_entity"
 
@@ -29,7 +31,6 @@ DEFAULT_EMHASS_GRID_ENTITY = "sensor.p_grid_forecast"
 DEFAULT_ENABLED = False
 DEFAULT_DRY_RUN = True
 DEFAULT_PLAN_MAX_AGE_HOURS = 3
-DEFAULT_SCAN_INTERVAL_MINUTES = 5
 
 # EMHASS attribute names (RetrieveHass.get_attr_data_dict)
 ATTR_BATTERY_SCHEDULE = "battery_scheduled_power"
@@ -40,6 +41,9 @@ APPLY_MINUTES: tuple[int, ...] = (0, 15, 30, 45)
 APPLY_SECOND = 20
 PLAN_SETTLE_SECONDS = 30  # coalesce the two EMHASS sensors into one run
 WRITE_SETTLE_SECONDS = 60  # FoxESS reads may lag behind a write this long
+# Stop writing when fewer daily API calls than this remain, so the other
+# integration keeps polling and the quota error never actually hits.
+QUOTA_RESERVE = 60
 
 ISSUE_RATE_LIMITED = "rate_limited"
 
@@ -50,16 +54,3 @@ SERVICE_SET_SCHEDULE = "set_schedule"
 ATTR_CONFIG_ENTRY_ID = "config_entry_id"
 ATTR_GROUPS = "groups"
 ATTR_ENABLE = "enable"
-
-# Variables requested from /op/v1/device/real/query. Keys match the Open API
-# variable names; the sensor platform maps them to entities.
-REALTIME_VARIABLES: tuple[str, ...] = (
-    "SoC",
-    "pvPower",
-    "loadsPower",
-    "gridConsumptionPower",
-    "feedinPower",
-    "batChargePower",
-    "batDischargePower",
-    "runningState",
-)

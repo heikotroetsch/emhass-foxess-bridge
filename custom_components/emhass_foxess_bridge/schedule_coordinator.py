@@ -4,7 +4,7 @@ The apply loop: read the EMHASS plan, compare with the inverter, write on change
 Runs on every quarter hour and, debounced, whenever one of the EMHASS plan
 sensors changes. Nothing is written unless the bridge is enabled and dry-run
 is off. A missing or outdated plan clears the schedule once so the inverter
-falls back to self-use.
+falls back to self-use. All inverter access goes through a FoxBackend.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from homeassistant.helpers.event import (
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
-from .api import FoxApiError, FoxApiRateLimitError
+from .backend import FoxBackendError, FoxBackendRateLimitError
 from .const import (
     APPLY_MINUTES,
     APPLY_SECOND,
@@ -46,17 +46,18 @@ from .const import (
     ISSUE_RATE_LIMITED,
     LOGGER,
     PLAN_SETTLE_SECONDS,
+    QUOTA_RESERVE,
     WRITE_SETTLE_SECONDS,
 )
 from .planner import PlanError, PlannerSettings, build_schedule, parse_plan
-from .schedule import SchedulerGroup, groups_equal
+from .schedule import MIN_SOC, SchedulerGroup, groups_equal
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from homeassistant.core import Event, EventStateChangedData, HomeAssistant
 
-    from .api import FoxOpenApiClient
+    from .backend import FoxBackend
     from .data import BridgeConfigEntry
 
 type Groups = tuple[SchedulerGroup, ...]
@@ -89,6 +90,8 @@ class ScheduleState:
     last_result: ApplyResult = ApplyResult.DISABLED
     last_detail: str | None = None
     writes_blocked_until: datetime | None = None
+    min_soc_on_grid: int = MIN_SOC
+    api_remaining: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,9 +119,7 @@ class ScheduleCoordinator(DataUpdateCoordinator[ScheduleState]):
         hass: HomeAssistant,
         *,
         config_entry: BridgeConfigEntry,
-        client: FoxOpenApiClient,
-        device_sn: str,
-        min_soc_on_grid: int,
+        backend: FoxBackend,
     ) -> None:
         """Bind the loop to one inverter. No interval: the timer below drives it."""
         super().__init__(
@@ -131,9 +132,8 @@ class ScheduleCoordinator(DataUpdateCoordinator[ScheduleState]):
                 hass, LOGGER, cooldown=PLAN_SETTLE_SECONDS, immediate=False
             ),
         )
-        self._client = client
-        self._device_sn = device_sn
-        self._min_soc_on_grid = min_soc_on_grid
+        self._backend = backend
+        self._min_soc_on_grid = MIN_SOC
         self._last_write: _WriteRecord | None = None
 
     # --- wiring ---------------------------------------------------------------
@@ -171,10 +171,7 @@ class ScheduleCoordinator(DataUpdateCoordinator[ScheduleState]):
 
     async def async_write_groups(self, groups: Groups, *, enable: bool) -> None:
         """Write groups now. Meant for experiments while the bridge is not live."""
-        await self._client.async_set_scheduler_groups(
-            self._device_sn, [g.to_api() for g in groups]
-        )
-        await self._client.async_set_scheduler_enabled(self._device_sn, enabled=enable)
+        await self._backend.async_write(groups, enable=enable)
         self._last_write = _WriteRecord(
             at=dt_util.utcnow(),
             groups=groups if enable else (),
@@ -188,7 +185,7 @@ class ScheduleCoordinator(DataUpdateCoordinator[ScheduleState]):
         self.hass.config_entries.async_update_entry(
             entry, options={**entry.options, CONF_ENABLED: False}
         )
-        await self._client.async_set_scheduler_enabled(self._device_sn, enabled=False)
+        await self._backend.async_disable()
         self._last_write = _WriteRecord(
             at=dt_util.utcnow(), groups=(), scheduler_enabled=False
         )
@@ -286,9 +283,9 @@ class ScheduleCoordinator(DataUpdateCoordinator[ScheduleState]):
         desired: Groups = () if reading.stale else reading.groups
         try:
             return await self._sync(state, desired, now)
-        except FoxApiRateLimitError:
+        except FoxBackendRateLimitError:
             return self._rate_limited(state, now)
-        except FoxApiError as exc:
+        except FoxBackendError as exc:
             LOGGER.warning("FoxESS scheduler call failed: %s", exc)
             return _finish(state, now, ApplyResult.ERROR, str(exc))
 
@@ -296,10 +293,22 @@ class ScheduleCoordinator(DataUpdateCoordinator[ScheduleState]):
         self, state: ScheduleState, desired: Groups, now: datetime
     ) -> ScheduleState:
         """Read the inverter, compare, and write when allowed and needed."""
-        flag = await self._client.async_get_scheduler_flag(self._device_sn)
-        raw_groups = await self._client.async_get_scheduler(self._device_sn)
-        scheduler_enabled = bool(flag.get("enable"))
-        current = _parse_groups(raw_groups)
+        reading = await self._backend.async_read()
+        self._min_soc_on_grid = reading.min_soc_on_grid
+        state = replace(
+            state,
+            min_soc_on_grid=reading.min_soc_on_grid,
+            api_remaining=reading.api_remaining,
+        )
+        if reading.api_remaining is not None and reading.api_remaining < QUOTA_RESERVE:
+            detail = (
+                f"only {reading.api_remaining} FoxESS API calls remaining today, "
+                f"keeping a reserve of {QUOTA_RESERVE}"
+            )
+            return self._rate_limited(state, now, detail)
+
+        scheduler_enabled = bool(reading.scheduler_enabled)
+        current = reading.groups
         effective: Groups = current if scheduler_enabled else ()
 
         pending = False
@@ -324,9 +333,9 @@ class ScheduleCoordinator(DataUpdateCoordinator[ScheduleState]):
             LOGGER.info("Dry run: would write %s", _describe(desired))
             return _finish(state, now, ApplyResult.DRY_RUN, _describe(desired))
 
-        result = await self._write(desired, scheduler_enabled=scheduler_enabled)
+        result = await self._write(desired)
         self._last_write = _WriteRecord(now, desired, bool(desired))
-        LOGGER.info("Wrote schedule to %s: %s", self._device_sn, _describe(desired))
+        LOGGER.info("Wrote schedule: %s", _describe(desired))
         state = replace(state, active=desired, scheduler_enabled=bool(desired))
         return _finish(state, now, result, _describe(desired))
 
@@ -343,22 +352,19 @@ class ScheduleCoordinator(DataUpdateCoordinator[ScheduleState]):
             effective, write.groups
         )
 
-    async def _write(self, desired: Groups, *, scheduler_enabled: bool) -> ApplyResult:
+    async def _write(self, desired: Groups) -> ApplyResult:
         if not desired:
-            await self._client.async_set_scheduler_enabled(
-                self._device_sn, enabled=False
-            )
+            await self._backend.async_disable()
             return ApplyResult.CLEARED
-        await self._client.async_set_scheduler_groups(
-            self._device_sn, [g.to_api() for g in desired]
-        )
-        if not scheduler_enabled:
-            await self._client.async_set_scheduler_enabled(
-                self._device_sn, enabled=True
-            )
+        await self._backend.async_write(desired, enable=True)
         return ApplyResult.WRITTEN
 
-    def _rate_limited(self, state: ScheduleState, now: datetime) -> ScheduleState:
+    def _rate_limited(
+        self,
+        state: ScheduleState,
+        now: datetime,
+        detail: str = "FoxESS Open API request limit exceeded",
+    ) -> ScheduleState:
         blocked_until = dt_util.as_utc(
             dt_util.start_of_local_day(dt_util.as_local(now) + timedelta(days=1))
         )
@@ -377,12 +383,7 @@ class ScheduleCoordinator(DataUpdateCoordinator[ScheduleState]):
             },
         )
         state = replace(state, writes_blocked_until=blocked_until)
-        return _finish(
-            state,
-            now,
-            ApplyResult.RATE_LIMITED,
-            "FoxESS Open API request limit exceeded",
-        )
+        return _finish(state, now, ApplyResult.RATE_LIMITED, detail)
 
 
 def _stale(reason: str, updated_at: datetime | None = None) -> _PlanReading:
@@ -396,16 +397,6 @@ def _finish(
     detail: str | None = None,
 ) -> ScheduleState:
     return replace(state, last_apply_at=now, last_result=result, last_detail=detail)
-
-
-def _parse_groups(raw_groups: list[dict[str, Any]]) -> Groups:
-    groups: list[SchedulerGroup] = []
-    for raw in raw_groups:
-        try:
-            groups.append(SchedulerGroup.from_api(raw))
-        except (KeyError, ValueError, TypeError) as exc:
-            LOGGER.warning("Ignoring scheduler group %r: %s", raw, exc)
-    return tuple(groups)
 
 
 def _describe(groups: Groups) -> str:

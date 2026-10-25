@@ -53,7 +53,7 @@ async def async_setup_entry(
     )
 
 
-class OptionSwitch(BridgeEntity["ScheduleCoordinator"], SwitchEntity):
+class OptionSwitch(BridgeEntity, SwitchEntity):
     """A switch persisted as a config entry option; toggling re-runs the apply loop."""
 
     def __init__(

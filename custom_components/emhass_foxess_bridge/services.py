@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 
-from .api import FoxApiError
+from .backend import FoxBackendError
 from .const import (
     ATTR_CONFIG_ENTRY_ID,
     ATTR_ENABLE,
@@ -46,6 +46,7 @@ GROUP_SCHEMA = vol.Schema(
         vol.Optional("min_soc_on_grid", default=MIN_SOC): _SOC,
         vol.Optional("fd_soc", default=MIN_SOC): _SOC,
         vol.Optional("fd_pwr", default=0): vol.All(vol.Coerce(int), vol.Range(min=0)),
+        vol.Optional("max_soc", default=MAX_SOC): _SOC,
     }
 )
 SET_SCHEDULE_SCHEMA = ENTRY_SCHEMA.extend(
@@ -105,7 +106,7 @@ async def _clear_schedule(call: ServiceCall) -> None:
     for entry in _entries_for(call):
         try:
             await entry.runtime_data.schedule.async_clear()
-        except FoxApiError as exc:
+        except FoxBackendError as exc:
             msg = f"Could not disable the scheduler on {entry.title}: {exc}"
             raise HomeAssistantError(msg) from exc
 
@@ -119,6 +120,7 @@ async def _set_schedule(call: ServiceCall) -> None:
             min_soc_on_grid=raw["min_soc_on_grid"],
             fd_soc=raw["fd_soc"],
             fd_pwr=raw["fd_pwr"],
+            max_soc=raw["max_soc"],
         )
         for raw in call.data[ATTR_GROUPS]
     )
@@ -137,6 +139,6 @@ async def _set_schedule(call: ServiceCall) -> None:
             raise ServiceValidationError(msg)
         try:
             await schedule.async_write_groups(groups, enable=call.data[ATTR_ENABLE])
-        except FoxApiError as exc:
+        except FoxBackendError as exc:
             msg = f"Could not write the schedule to {entry.title}: {exc}"
             raise HomeAssistantError(msg) from exc

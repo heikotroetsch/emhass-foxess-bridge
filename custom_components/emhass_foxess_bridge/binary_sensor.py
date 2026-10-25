@@ -35,7 +35,7 @@ async def async_setup_entry(
     async_add_entities([PlanStaleSensor(entry.runtime_data.schedule)])
 
 
-class PlanStaleSensor(BridgeEntity["ScheduleCoordinator"], BinarySensorEntity):
+class PlanStaleSensor(BridgeEntity, BinarySensorEntity):
     """On when the bridge has no usable plan and therefore keeps self-use."""
 
     entity_description = PLAN_STALE
