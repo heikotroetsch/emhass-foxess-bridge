@@ -240,7 +240,8 @@ Contributing: [`CONTRIBUTING.md`](CONTRIBUTING.md). Changes: [`CHANGELOG.md`](CH
 
 ## License
 
-MIT, see [`LICENSE`](LICENSE). Thanks to
-[ludeeus/integration_blueprint](https://github.com/ludeeus/integration_blueprint)
-for the repository scaffold, to [duquedaniel/ha-foxess-openapi](https://github.com/duquedaniel/ha-foxess-openapi)
+MIT, see [`LICENSE`](LICENSE). The repository scaffold derives from
+[ludeeus/integration_blueprint](https://github.com/ludeeus/integration_blueprint),
+Copyright (c) 2019-2025 Joakim Sørensen, MIT License. Thanks also to
+[duquedaniel/ha-foxess-openapi](https://github.com/duquedaniel/ha-foxess-openapi)
 for the FoxESS connection and to the [EMHASS](https://github.com/davidusb-geek/emhass) project.
