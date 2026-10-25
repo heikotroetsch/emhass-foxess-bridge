@@ -7,10 +7,14 @@ entity ids and the battery figures to your installation.
 
 | File | Purpose |
 | --- | --- |
-| `template_sensors.yaml` | W versions of the kW power sensors from ha-foxess-openapi, for EMHASS. |
-| `config.json` | EMHASS parameters (add-on *Configuration* page or `config.json`). |
-| `rest_commands.yaml` | REST commands that call the EMHASS add-on with prices from the Octopus sensor. |
+| `template_sensors.yaml` | W versions of the kW power sensors from ha-foxess-openapi, for EMHASS. Include with `template: !include ...`. |
+| `config.json` | EMHASS parameters. Push them with `curl -X POST http://<ha>:5000/set-config --data-binary @config.json` or paste them in the add-on's web UI. Verified with EMHASS 0.18.7. |
+| `rest_commands.yaml` | REST commands that call the EMHASS add-on with prices from the Octopus sensor. Include with `rest_command: !include ...`. |
 | `automations.yaml` | Day-ahead run after the 17:00 price publication, MPC every 15 minutes, publish. |
+
+The `template:` and `rest_command:` sections need a Home Assistant restart
+the first time they appear; afterwards `template.reload` and
+`rest_command.reload` are enough.
 
 ## Flow
 
@@ -40,5 +44,8 @@ entity ids and the battery figures to your installation.
   charging at the end of the horizon.
 - Parameter names follow EMHASS 0.13. Compare with the `config_defaults.json`
   of your EMHASS version before copying.
+- EMHASS needs sensor history (`historic_days_to_retrieve`, here 2 days). Right
+  after the template sensors are created, every run fails with a pandas
+  `freq ... NaTType` error until enough samples exist. Nothing to fix, wait.
 - Keep the bridge in dry run for a few days and compare
-  `sensor.<inverter>_planned_schedule` with the cheapest slots of the day.
+  `sensor.<bridge>_planned_schedule` with the cheapest slots of the day.

@@ -60,7 +60,7 @@ one commit. Target: Home Assistant 2026.10.4 only.
 | 3 Options, services, diagnostics | done on the service backend |
 | 7 Backend swap | done 2026-10-25 (112 tests) |
 | 4 Real-system contract | recordings and `tests/contract` done; `scripts/write_cycle.py` ready, **not yet run** (needs Heiko's go) |
-| 5 Field test | bridge deployed and configured at the parents' HA in dry run (2026-10-25 23:01); EMHASS config and the dynamic tariff are open |
+| 5 Field test | dry-run stage running at the parents' HA since 2026-10-25 23:01: bridge, EMHASS 0.18.7 (configured), W template sensors, REST commands and automations installed; EMHASS waits for sensor history, the plan waits for the dynamic tariff |
 | 6 Release 0.1.0 | after 5 |
 
 ## Test pyramid
@@ -160,8 +160,15 @@ groups with `maxSoc`). The Octopus contract is still the interim tariff
 `DEU-ELECTRICITY-DYNAMIC-OCTOPUS-LIGHT-12`, type `Simple`, fixed 31.5 ct/kWh
 "until customer received Smart Meter installed": the price sensor has no
 `rates` attribute yet. The field test with real prices waits for Octopus to
-switch the contract to the dynamic tariff. The EMHASS add-on is installed
-but not configured.
+switch the contract to the dynamic tariff (Heiko: the switch is imminent).
+EMHASS 0.18.7 is configured through its web API (port 5000, `/set-config`)
+with `examples/emhass/config.json`; the REST commands fall back to a flat
+price list from the current tariff price while there are no rates, so the
+pipeline runs end to end before the switch. Until a day or two of history
+exists for the W template sensors, every EMHASS run fails with a pandas
+`freq ... NaTType` error; the automations keep retrying every 15 minutes.
+`configuration.yaml` was backed up to `configuration.yaml.bak-emhass-bridge`
+before the two include lines were appended.
 
 Prerequisites outside this repo: `foxess_openapi` configured with the API
 key, `octopus_germany` for prices, EMHASS add-on with a 15-minute step and

@@ -1,52 +1,49 @@
-# REST commands for the EMHASS add-on. Put under `rest_command:` in
-# configuration.yaml (or include this file). Replace the Octopus and bridge
-# entity ids with yours.
-#
-# The price list comes from the `rates` attribute of the octopus_germany price
-# sensor: sorted entries {start, end, value_inc_vat} in EUR/kWh, 15 minutes
-# each. Only entries from the current slot onwards are passed, and
-# prediction_horizon is set to their count so EMHASS plans exactly as far as
-# prices are known.
+# EMHASS FoxESS Bridge: REST commands for the EMHASS add-on.
+# Included from configuration.yaml via `rest_command: !include emhass_rest_commands.yaml`.
+# Prices: the Octopus rates list (EUR/kWh, 15 min) from the current slot on. On the
+# interim fixed tariff there is no rates list; then the current price is repeated
+# for 24 h so EMHASS still runs, with nothing to gain from grid charging.
+emhass_dayahead_optim:
+  url: http://localhost:5000/action/dayahead-optim
+  method: POST
+  content_type: "application/json"
+  timeout: 300
+  payload: >-
+    {% set price = 'sensor.octopus_ACCOUNT_electricity_price' %}
+    {% set rates = state_attr(price, 'rates') or [] %}
+    {% set ns = namespace(prices=[]) %}
+    {% for r in rates if as_datetime(r.end) > now() %}
+      {% set ns.prices = ns.prices + [r.value_inc_vat] %}
+    {% endfor %}
+    {% if ns.prices | count == 0 %}
+      {% set ns.prices = [states(price) | float(0.30)] * 96 %}
+    {% endif %}
+    {"load_cost_forecast": {{ ns.prices | to_json }},
+     "prod_price_forecast": {{ ([0.08] * (ns.prices | count)) | to_json }},
+     "prediction_horizon": {{ ns.prices | count }}}
 
-rest_command:
-  emhass_dayahead_optim:
-    url: http://localhost:5000/action/dayahead-optim
-    method: POST
-    content_type: "application/json"
-    timeout: 300
-    payload: >-
-      {% set rates = state_attr('sensor.octopus_ACCOUNT_electricity_price', 'rates') or [] %}
-      {% set ns = namespace(prices=[]) %}
-      {% for r in rates if as_datetime(r.end) > now() %}
-        {% set ns.prices = ns.prices + [r.value_inc_vat] %}
-      {% endfor %}
-      {
-        "load_cost_forecast": {{ ns.prices | to_json }},
-        "prod_price_forecast": {{ (ns.prices | map('multiply', 0) | map('add', 0.08) | list) | to_json }},
-        "prediction_horizon": {{ ns.prices | count }}
-      }
+emhass_mpc_optim:
+  url: http://localhost:5000/action/naive-mpc-optim
+  method: POST
+  content_type: "application/json"
+  timeout: 300
+  payload: >-
+    {% set price = 'sensor.octopus_ACCOUNT_electricity_price' %}
+    {% set rates = state_attr(price, 'rates') or [] %}
+    {% set ns = namespace(prices=[]) %}
+    {% for r in rates if as_datetime(r.end) > now() %}
+      {% set ns.prices = ns.prices + [r.value_inc_vat] %}
+    {% endfor %}
+    {% if ns.prices | count == 0 %}
+      {% set ns.prices = [states(price) | float(0.30)] * 96 %}
+    {% endif %}
+    {"load_cost_forecast": {{ ns.prices | to_json }},
+     "prod_price_forecast": {{ ([0.08] * (ns.prices | count)) | to_json }},
+     "prediction_horizon": {{ ns.prices | count }},
+     "soc_init": {{ (states('sensor.foxess_station_battery_soc') | float(50)) / 100 }}}
 
-  emhass_mpc_optim:
-    url: http://localhost:5000/action/naive-mpc-optim
-    method: POST
-    content_type: "application/json"
-    timeout: 300
-    payload: >-
-      {% set rates = state_attr('sensor.octopus_ACCOUNT_electricity_price', 'rates') or [] %}
-      {% set ns = namespace(prices=[]) %}
-      {% for r in rates if as_datetime(r.end) > now() %}
-        {% set ns.prices = ns.prices + [r.value_inc_vat] %}
-      {% endfor %}
-      {
-        "load_cost_forecast": {{ ns.prices | to_json }},
-        "prod_price_forecast": {{ (ns.prices | map('multiply', 0) | map('add', 0.08) | list) | to_json }},
-        "prediction_horizon": {{ ns.prices | count }},
-        "soc_init": {{ (states('sensor.foxess_station_battery_soc') | float(50)) / 100 }},
-        "soc_final": 0.3
-      }
-
-  emhass_publish_data:
-    url: http://localhost:5000/action/publish-data
-    method: POST
-    content_type: "application/json"
-    payload: "{}"
+emhass_publish_data:
+  url: http://localhost:5000/action/publish-data
+  method: POST
+  content_type: "application/json"
+  payload: "{}"

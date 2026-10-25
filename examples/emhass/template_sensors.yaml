@@ -1,20 +1,17 @@
-# ha-foxess-openapi reports power in kW. EMHASS reads raw sensor states and
-# expects W, so give it these template sensors. Put under `template:` in
-# configuration.yaml and replace the entity ids with yours (they are named
-# after your FoxESS station).
-template:
-  - sensor:
-      - name: "FoxESS PV power W"
-        unique_id: foxess_pv_power_w
-        unit_of_measurement: W
-        device_class: power
-        state_class: measurement
-        state: "{{ (states('sensor.foxess_station_pv_power') | float(0) * 1000) | round(0) }}"
-        availability: "{{ has_value('sensor.foxess_station_pv_power') }}"
-      - name: "FoxESS load power W"
-        unique_id: foxess_load_power_w
-        unit_of_measurement: W
-        device_class: power
-        state_class: measurement
-        state: "{{ (states('sensor.foxess_station_load_power') | float(0) * 1000) | round(0) }}"
-        availability: "{{ has_value('sensor.foxess_station_load_power') }}"
+# EMHASS FoxESS Bridge: W versions of the kW power sensors from ha-foxess-openapi.
+# Included from configuration.yaml via `template: !include emhass_template_sensors.yaml`.
+- sensor:
+    - name: "FoxESS PV power W"
+      unique_id: foxess_pv_power_w
+      unit_of_measurement: W
+      device_class: power
+      state_class: measurement
+      state: "{{ (states('sensor.foxess_station_pv_power') | float(0) * 1000) | round(0) }}"
+      availability: "{{ has_value('sensor.foxess_station_pv_power') }}"
+    - name: "FoxESS load power W"
+      unique_id: foxess_load_power_w
+      unit_of_measurement: W
+      device_class: power
+      state_class: measurement
+      state: "{{ (states('sensor.foxess_station_load_power') | float(0) * 1000) | round(0) }}"
+      availability: "{{ has_value('sensor.foxess_station_load_power') }}"
