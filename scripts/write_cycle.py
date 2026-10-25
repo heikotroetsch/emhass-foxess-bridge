@@ -97,14 +97,22 @@ def main() -> int:
         write([probe], enable=True)
         started = time.monotonic()
         after = get()
+        groups_seen_after: float | None = None
+        flag_seen_after: float | None = None
         for _ in range(SETTLE_ATTEMPTS):
-            if same(after.get("groups", []), [probe]):
+            elapsed = round(time.monotonic() - started, 1)
+            if groups_seen_after is None and same(after.get("groups", []), [probe]):
+                groups_seen_after = elapsed
+            if flag_seen_after is None and int(after.get("enable") or 0) == 1:
+                flag_seen_after = elapsed
+            if groups_seen_after is not None and flag_seen_after is not None:
                 break
             time.sleep(SETTLE_SLEEP_S)
             after = get()
         shown = active(after.get("groups", []))
         findings["probe_read_back"] = shown
-        findings["probe_settle_seconds"] = round(time.monotonic() - started, 1)
+        findings["groups_visible_after_seconds"] = groups_seen_after
+        findings["flag_visible_after_seconds"] = flag_seen_after
         findings["end_minute_kept"] = (
             bool(shown) and shown[0].get("endMinute") == PROBE_MINUTES
         )
