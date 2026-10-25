@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0-beta.2] - 2026-10-25
+
 ### Changed
 
 - Pushing a `v*` tag now creates the GitHub release with the HACS zip; no
