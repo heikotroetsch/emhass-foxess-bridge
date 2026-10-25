@@ -7,12 +7,17 @@ on:
   pull_request:
     branches:
       - "main"
+  workflow_dispatch:
 
 permissions: {}
 
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pytest:
-    name: "Unit and component tests"
+    name: "Unit, component and contract tests"
     runs-on: "ubuntu-latest"
     steps:
       - name: Checkout the repository
@@ -34,5 +39,16 @@ jobs:
           python3 -m pip install -r requirements_common.txt
           python3 -m pip install -r requirements_dev.txt
 
-      - name: Run tiers 1 and 2
-        run: python3 -m pytest tests/unit tests/component -q
+      - name: Run tiers 1 to 3
+        run: python3 -m pytest tests/unit tests/component tests/contract -q -p no:cacheprovider
+
+      - name: Check that the manifest version is a plain release version
+        run: |
+          python3 - <<'PY'
+          import json, re, sys
+          version = json.load(open("custom_components/emhass_foxess_bridge/manifest.json"))["version"]
+          if not re.fullmatch(r"\d+\.\d+\.\d+(-(alpha|beta|rc)\.\d+)?", version):
+              print(f"::error::manifest.json version {version!r} must look like 1.2.3 or 1.2.3-beta.1")
+              sys.exit(1)
+          print("manifest version", version)
+          PY

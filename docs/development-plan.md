@@ -61,7 +61,7 @@ one commit. Target: Home Assistant 2026.10.4 only.
 | 7 Backend swap | done 2026-10-25 (112 tests) |
 | 4 Real-system contract | done: recordings, `tests/contract`, write cycle run twice on 2026-10-25 with Heiko's go, findings below |
 | 5 Field test | dry-run stage running at the parents' HA since 2026-10-25 23:01: bridge, EMHASS 0.18.7 (configured), W template sensors, REST commands and automations installed; EMHASS waits for sensor history, the plan waits for the dynamic tariff |
-| 6 Release 0.1.0 | after 5 |
+| 6 Release 0.1.0 | repo prepared 2026-10-25: CI (tests, lint, hassfest, HACS), release workflow with HACS zip, changelog, templates, user README, `scripts/release`; open: GitHub remote, screenshots, first tag after the field test |
 
 ## Test pyramid
 
@@ -194,9 +194,18 @@ sensors, two automations), `.env` with `HA_SSH_HOST` and `HA_TOKEN`.
 
 ## Milestone 6: release 0.1.0
 
-README with screenshots and the EMHASS example config, CHANGELOG, GitHub
-release tag, repository public, note in the ha-foxess-openapi and EMHASS
-communities.
+Prepared: `tests.yml` runs tiers 1 to 3 and checks the manifest version,
+`lint.yml` runs ruff, `validate.yml` runs hassfest and the HACS action
+(`ignore: brands`, so the repository needs topics such as `home-assistant`,
+`hacs`, `emhass`, `foxess`), `release.yml` builds `emhass_foxess_bridge.zip`
+on a published release after checking that the tag equals the manifest
+version; `hacs.json` has `zip_release` and `render_readme`;
+`scripts/release X.Y.Z` bumps, rolls `CHANGELOG.md`, commits and tags.
+
+Remaining: create the GitHub repository and push, add screenshots of the
+entities and a dashboard card to the README, run the field test to the
+acceptance criteria, then `scripts/release 0.1.0`, publish the release and
+post in the ha-foxess-openapi and EMHASS communities.
 
 ## Later
 

@@ -1,54 +1,58 @@
 ---
 name: "Bug report"
-description: "Report a bug with the integration"
+description: "Something in the bridge does not behave as documented"
+labels: ["bug"]
 body:
-- type: markdown
-  attributes:
-    value: Before you open a new issue, search through the existing issues to see if others have had the same problem.
-- type: textarea
-  attributes:
-    label: "System Health details"
-    description: "Paste the data from the System Health card in Home Assistant (https://www.home-assistant.io/more-info/system-health#github-issues)"
-  validations:
-    required: true
-- type: checkboxes
-  attributes:
-    label: Checklist
-    options:
-      - label: I have enabled debug logging for my installation.
-        required: true
-      - label: I have filled out the issue template to the best of my ability.
-        required: true
-      - label: This issue only contains 1 issue (if you have multiple issues, open one issue for each issue).
-        required: true
-      - label: This issue is not a duplicate issue of any [previous issues](https://github.com/ludeeus/integration_blueprint/issues?q=is%3Aissue+label%3A%22Bug%22+)..
-        required: true
-- type: textarea
-  attributes:
-    label: "Describe the issue"
-    description: "A clear and concise description of what the issue is."
-  validations:
-    required: true
-- type: textarea
-  attributes:
-    label: Reproduction steps
-    description: "Without steps to reproduce, it will be hard to fix. It is very important that you fill out this part. Issues without it will be closed."
-    value: |
-      1.
-      2.
-      3.
-      ...
-  validations:
-    required: true
-- type: textarea
-  attributes:
-    label: "Debug logs"
-    description: "To enable debug logs check this https://www.home-assistant.io/integrations/logger/, this **needs** to include _everything_ from startup of Home Assistant to the point where you encounter the issue."
-    render: text
-  validations:
-    required: true
-
-- type: textarea
-  attributes:
-    label: "Diagnostics dump"
-    description: "Drag the diagnostics dump file here. (see https://www.home-assistant.io/integrations/diagnostics/ for info)"
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please search the existing issues first. For problems
+        with the FoxESS cloud connection itself (API key, sensors, logging in), open the
+        issue at [ha-foxess-openapi](https://github.com/duquedaniel/ha-foxess-openapi/issues);
+        for optimisation results, at [EMHASS](https://github.com/davidusb-geek/emhass/issues).
+  - type: textarea
+    attributes:
+      label: "What happened"
+      description: "What did the bridge do, and what did you expect instead?"
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: "How to reproduce"
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: "Inverter model and firmware"
+      placeholder: "H3-5.0-E, master 1.91, manager 1.81"
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: "Versions"
+      placeholder: "Home Assistant 2026.10.4, EMHASS FoxESS Bridge 0.1.0, ha-foxess-openapi 0.1.2, EMHASS 0.18.7"
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: "Diagnostics download"
+      description: "Settings > Devices & services > EMHASS FoxESS Bridge > three dots > Download diagnostics. Serials and the API key are redacted. Drag the file here."
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: "Debug log"
+      description: "Enable debug logging for the integration (three dots > Enable debug logging), reproduce, disable it again and attach the downloaded log."
+      render: text
+  - type: checkboxes
+    attributes:
+      label: Checklist
+      options:
+        - label: The FoxESS Cloud Open API integration shows live values for this inverter.
+          required: true
+        - label: This issue describes one problem.
+          required: true

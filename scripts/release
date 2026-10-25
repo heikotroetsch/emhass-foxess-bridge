@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Prepare a release: set the manifest version, roll the changelog, commit, tag.
+#   scripts/release 0.2.0
+# Afterwards: git push && git push --tags, then publish the GitHub release for
+# the tag; the Release workflow attaches the HACS zip.
+set -e
+cd "$(dirname "$0")/.."
+VERSION="${1:?usage: scripts/release X.Y.Z}"
+[[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]] || { echo "version must look like 1.2.3 or 1.2.3-beta.1"; exit 1; }
+[[ -z "$(git status --porcelain --untracked-files=no)" ]] || { echo "commit or stash your changes first"; exit 1; }
+git rev-parse "v${VERSION}" >/dev/null 2>&1 && { echo "tag v${VERSION} exists"; exit 1; }
+
+python3 - "$VERSION" <<'PY'
+import json, re, sys
+from datetime import date
+from pathlib import Path
+
+version = sys.argv[1]
+manifest = Path("custom_components/emhass_foxess_bridge/manifest.json")
+data = json.loads(manifest.read_text())
+data["version"] = version
+manifest.write_text(json.dumps(data, indent=2) + "\n")
+
+changelog = Path("CHANGELOG.md")
+text = changelog.read_text()
+if "## [Unreleased]" not in text:
+    sys.exit("CHANGELOG.md has no '## [Unreleased]' section")
+text = text.replace(
+    "## [Unreleased]",
+    f"## [Unreleased]\n\n## [{version}] - {date.today().isoformat()}",
+    1,
+)
+changelog.write_text(text)
+PY
+
+scripts/lint >/dev/null
+scripts/test -q
+git add custom_components/emhass_foxess_bridge/manifest.json CHANGELOG.md
+git commit -m "release: v${VERSION}"
+git tag -a "v${VERSION}" -m "EMHASS FoxESS Bridge v${VERSION}"
+echo
+echo "tagged v${VERSION}. Next:"
+echo "  git push && git push origin v${VERSION}"
+echo "  gh release create v${VERSION} --title \"v${VERSION}\" --notes-from-tag   # or write notes from CHANGELOG.md"
