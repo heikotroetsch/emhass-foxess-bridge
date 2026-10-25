@@ -44,7 +44,10 @@ async def test_setup_creates_live_sensors(
 
     with (
         patch(f"{CLIENT}.async_get_device_detail", return_value=detail),
+        patch(f"{CLIENT}.async_get_battery_soc", return_value={"minSocOnGrid": 10}),
         patch(f"{CLIENT}.async_get_real_time", return_value=realtime),
+        patch(f"{CLIENT}.async_get_scheduler_flag", return_value={"enable": False}),
+        patch(f"{CLIENT}.async_get_scheduler", return_value=[]),
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
