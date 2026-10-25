@@ -11,6 +11,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from homeassistant.const import Platform
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import FoxApiError, FoxOpenApiClient
@@ -25,9 +26,11 @@ from .coordinator import BridgeCoordinator
 from .data import BridgeRuntimeData
 from .schedule import MIN_SOC
 from .schedule_coordinator import ScheduleCoordinator
+from .services import async_setup_services
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.typing import ConfigType
 
     from .data import BridgeConfigEntry
 
@@ -36,6 +39,14 @@ PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.SWITCH,
 ]
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:  # noqa: ARG001
+    """Register the manual services once per Home Assistant instance."""
+    async_setup_services(hass)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: BridgeConfigEntry) -> bool:

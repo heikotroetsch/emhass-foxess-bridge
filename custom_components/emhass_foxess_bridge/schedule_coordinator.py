@@ -167,6 +167,33 @@ class ScheduleCoordinator(DataUpdateCoordinator[ScheduleState]):
     async def _handle_tick(self, _now: datetime) -> None:
         await self.async_refresh()
 
+    # --- manual operations (services) ---------------------------------------------
+
+    async def async_write_groups(self, groups: Groups, *, enable: bool) -> None:
+        """Write groups now. Meant for experiments while the bridge is not live."""
+        await self._client.async_set_scheduler_groups(
+            self._device_sn, [g.to_api() for g in groups]
+        )
+        await self._client.async_set_scheduler_enabled(self._device_sn, enabled=enable)
+        self._last_write = _WriteRecord(
+            at=dt_util.utcnow(),
+            groups=groups if enable else (),
+            scheduler_enabled=enable,
+        )
+        await self.async_refresh()
+
+    async def async_clear(self) -> None:
+        """Disable the mode scheduler and switch the bridge off so it stays off."""
+        entry = self.config_entry
+        self.hass.config_entries.async_update_entry(
+            entry, options={**entry.options, CONF_ENABLED: False}
+        )
+        await self._client.async_set_scheduler_enabled(self._device_sn, enabled=False)
+        self._last_write = _WriteRecord(
+            at=dt_util.utcnow(), groups=(), scheduler_enabled=False
+        )
+        await self.async_refresh()
+
     # --- settings ---------------------------------------------------------------
 
     @property

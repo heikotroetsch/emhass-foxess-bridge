@@ -1,0 +1,37 @@
+apply_plan:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: emhass_foxess_bridge
+
+clear_schedule:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: emhass_foxess_bridge
+
+set_schedule:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: emhass_foxess_bridge
+    groups:
+      required: true
+      example: |
+        - start: "02:00"
+          end: "04:59"
+          work_mode: ForceCharge
+          min_soc_on_grid: 10
+      selector:
+        object:
+    enable:
+      required: false
+      default: true
+      selector:
+        boolean:

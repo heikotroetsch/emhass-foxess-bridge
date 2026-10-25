@@ -34,5 +34,64 @@
             "title": "FoxESS API request limit exhausted",
             "description": "The FoxESS Cloud Open API allows 1440 requests per inverter and day and that quota is used up. The bridge pauses all API calls and resumes at {resume_at}. If this happens regularly, check for other integrations or scripts using the same API key."
         }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Planner settings",
+                "data": {
+                    "charge_threshold_w": "Charge threshold",
+                    "min_window_minutes": "Minimum charge window",
+                    "max_groups": "Maximum scheduler groups",
+                    "plan_max_age_hours": "Maximum plan age"
+                },
+                "data_description": {
+                    "charge_threshold_w": "A plan step counts as grid charging when EMHASS plans at least this much battery charging power and grid import.",
+                    "min_window_minutes": "Charge windows shorter than this are not written to the inverter.",
+                    "max_groups": "FoxESS accepts up to 8 groups. When the plan needs more, the windows with the least energy are dropped.",
+                    "plan_max_age_hours": "When the EMHASS plan is older than this, the bridge clears the schedule and the inverter returns to self-use."
+                }
+            }
+        }
+    },
+    "services": {
+        "apply_plan": {
+            "name": "Apply plan",
+            "description": "Run the apply loop now instead of waiting for the next quarter hour.",
+            "fields": {
+                "config_entry_id": {
+                    "name": "Inverter",
+                    "description": "The bridge entry to act on. Leave empty for all."
+                }
+            }
+        },
+        "clear_schedule": {
+            "name": "Clear schedule",
+            "description": "Disable the mode scheduler on the inverter and switch the bridge off so it stays disabled.",
+            "fields": {
+                "config_entry_id": {
+                    "name": "Inverter",
+                    "description": "The bridge entry to act on. Leave empty for all."
+                }
+            }
+        },
+        "set_schedule": {
+            "name": "Set schedule",
+            "description": "Write scheduler groups by hand, for experiments. Refused while the bridge is live, because the next apply run would overwrite them.",
+            "fields": {
+                "config_entry_id": {
+                    "name": "Inverter",
+                    "description": "The bridge entry to act on. Leave empty for all."
+                },
+                "groups": {
+                    "name": "Groups",
+                    "description": "Up to 8 groups with start, end (inclusive minute), work_mode (SelfUse, Feedin, Backup, ForceCharge, ForceDischarge), min_soc_on_grid, fd_soc and fd_pwr."
+                },
+                "enable": {
+                    "name": "Enable scheduler",
+                    "description": "Switch the mode scheduler on after writing the groups."
+                }
+            }
+        }
     }
 }

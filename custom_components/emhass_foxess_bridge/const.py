@@ -43,6 +43,14 @@ WRITE_SETTLE_SECONDS = 60  # FoxESS reads may lag behind a write this long
 
 ISSUE_RATE_LIMITED = "rate_limited"
 
+# Services
+SERVICE_APPLY_PLAN = "apply_plan"
+SERVICE_CLEAR_SCHEDULE = "clear_schedule"
+SERVICE_SET_SCHEDULE = "set_schedule"
+ATTR_CONFIG_ENTRY_ID = "config_entry_id"
+ATTR_GROUPS = "groups"
+ATTR_ENABLE = "enable"
+
 # Variables requested from /op/v1/device/real/query. Keys match the Open API
 # variable names; the sensor platform maps them to entities.
 REALTIME_VARIABLES: tuple[str, ...] = (
