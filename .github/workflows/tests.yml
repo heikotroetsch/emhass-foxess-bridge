@@ -9,7 +9,9 @@ on:
       - "main"
   workflow_dispatch:
 
-permissions: {}
+# contents: read lets actions/checkout clone the repository while it is private.
+permissions:
+  contents: read
 
 concurrency:
   group: tests-${{ github.ref }}
