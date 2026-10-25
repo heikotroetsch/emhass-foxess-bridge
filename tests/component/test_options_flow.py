@@ -15,16 +15,16 @@ from custom_components.emhass_foxess_bridge.const import (
     CONF_PLAN_MAX_AGE_HOURS,
 )
 
-from .fake_fox import LIVE, FakeFoxCloud, setup_bridge
+from .fake_foxess_openapi import LIVE, FakeFoxessOpenApi, setup_bridge
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 
 async def test_options_flow_saves_tunables_and_keeps_the_switches(
-    hass: HomeAssistant, fox: FakeFoxCloud
+    hass: HomeAssistant, fox: FakeFoxessOpenApi
 ) -> None:
-    entry = await setup_bridge(hass, LIVE)
+    entry = await setup_bridge(hass, fox, LIVE)
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] is FlowResultType.FORM
@@ -51,9 +51,9 @@ async def test_options_flow_saves_tunables_and_keeps_the_switches(
 
 
 async def test_options_flow_shows_the_current_values(
-    hass: HomeAssistant, fox: FakeFoxCloud
+    hass: HomeAssistant, fox: FakeFoxessOpenApi
 ) -> None:
-    entry = await setup_bridge(hass, {CONF_MIN_WINDOW_MINUTES: 15})
+    entry = await setup_bridge(hass, fox, {CONF_MIN_WINDOW_MINUTES: 15})
     result = await hass.config_entries.options.async_init(entry.entry_id)
     schema = result["data_schema"].schema
     defaults = {str(key): key.default() for key in schema if key.default is not None}

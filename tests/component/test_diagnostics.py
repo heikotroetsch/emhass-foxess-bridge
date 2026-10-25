@@ -14,7 +14,7 @@ from pytest_homeassistant_custom_component.components.diagnostics import (
 
 from custom_components.emhass_foxess_bridge.const import CONF_MIN_WINDOW_MINUTES
 
-from .fake_fox import API_KEY, LIVE, SN, FakeFoxCloud, setup_bridge
+from .fake_foxess_openapi import LIVE, SN, FakeFoxessOpenApi, setup_bridge
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 async def test_diagnostics_describe_the_bridge_without_secrets(
     hass: HomeAssistant,
     hass_client: ClientSessionGenerator,
-    fox: FakeFoxCloud,
+    fox: FakeFoxessOpenApi,
 ) -> None:
     # The access token behind hass_client is issued at the real "now", so this
     # test plans relative to now instead of moving the clock to the fixture.
@@ -45,18 +45,13 @@ async def test_diagnostics_describe_the_bridge_without_secrets(
         "5400.00",
         {"forecasts": [{"date": step.isoformat(sep=" "), "p_grid_forecast": "5400.0"}]},
     )
-    entry = await setup_bridge(hass, {**LIVE, CONF_MIN_WINDOW_MINUTES: 15})
+    entry = await setup_bridge(hass, fox, {**LIVE, CONF_MIN_WINDOW_MINUTES: 15})
 
     diagnostics = await get_diagnostics_for_config_entry(hass, hass_client, entry)
 
-    assert diagnostics["entry"]["data"]["api_key"] == REDACTED
-    assert diagnostics["entry"]["data"]["device_sn"] == REDACTED
     assert diagnostics["entry"]["options"] == {**LIVE, CONF_MIN_WINDOW_MINUTES: 15}
-    assert diagnostics["device"]["deviceType"] == "H3-5.0-E"
-    assert diagnostics["device"]["deviceSN"] == REDACTED
-    assert diagnostics["device"]["batteryList"][0]["batterySN"] == REDACTED
-    assert diagnostics["min_soc_on_grid"] == 10
-    assert diagnostics["realtime"]["SoC"] == 9.0
+    assert diagnostics["device"]["serial"] == REDACTED
+    assert diagnostics["device"]["entity_ids"]["schedule"] == fox.entity_ids["schedule"]
     planned = diagnostics["schedule"]["planned"]
     assert len(planned) == 1
     assert (planned[0]["startHour"], planned[0]["startMinute"]) == (
@@ -67,11 +62,14 @@ async def test_diagnostics_describe_the_bridge_without_secrets(
     assert diagnostics["schedule"]["active"] == planned
     assert diagnostics["schedule"]["last_result"] == "written"
     assert diagnostics["schedule"]["plan_stale"] is False
+    assert diagnostics["schedule"]["min_soc_on_grid"] == 10
+    assert diagnostics["schedule"]["api_remaining"] == 1200
+    fox_schedule = diagnostics["foxess_openapi"]["schedule"]
+    assert fox_schedule["attributes"]["master_switch"] is True
     plan = diagnostics["emhass"]["sensor.p_batt_forecast"]
     assert plan["state"] == "-5000.00"
     assert plan["available"] is True
     assert len(plan["attributes"]["battery_scheduled_power"]) == 1
 
     dumped = json.dumps(diagnostics)
-    assert API_KEY not in dumped
     assert SN not in dumped

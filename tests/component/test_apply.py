@@ -1,4 +1,4 @@
-"""Component tests for the apply loop: EMHASS plan in, scheduler groups out."""
+"""Component tests for the apply loop: EMHASS plan in, scheduler services out."""
 
 from __future__ import annotations
 
@@ -9,10 +9,6 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.util import dt as dt_util
 
-from custom_components.emhass_foxess_bridge.api import (
-    PATH_SCHEDULER_ENABLE,
-    PATH_SCHEDULER_SET,
-)
 from custom_components.emhass_foxess_bridge.const import (
     CONF_DRY_RUN,
     CONF_ENABLED,
@@ -21,12 +17,13 @@ from custom_components.emhass_foxess_bridge.const import (
     ISSUE_RATE_LIMITED,
 )
 
-from .fake_fox import (
+from .fake_foxess_openapi import (
     LIVE,
     NIGHT_GROUP,
     PLAN_TIME,
+    RATE_LIMIT_MESSAGE,
     SN,
-    FakeFoxCloud,
+    FakeFoxessOpenApi,
     next_quarter,
     publish_plan,
     settle,
@@ -41,15 +38,17 @@ if TYPE_CHECKING:
     from freezegun.api import FrozenDateTimeFactory
     from homeassistant.core import HomeAssistant
 
+WRITE = {"device_sn": SN, "groups": [NIGHT_GROUP], "enable_scheduler": True}
+
 
 async def test_plan_update_is_turned_into_a_planned_schedule(
     hass: HomeAssistant,
-    fox: FakeFoxCloud,
+    fox: FakeFoxessOpenApi,
     freezer: FrozenDateTimeFactory,
     load_fixture: Callable,
 ) -> None:
     freezer.move_to(PLAN_TIME)
-    await setup_bridge(hass)
+    await setup_bridge(hass, fox)
     publish_plan(hass, load_fixture)
     await settle(hass, freezer)
 
@@ -58,48 +57,46 @@ async def test_plan_update_is_turned_into_a_planned_schedule(
     assert planned.attributes["groups"] == [NIGHT_GROUP]
     assert state(hass, "binary_sensor", "plan_stale").state == "off"
     assert state(hass, "sensor", "apply_result").state == "disabled"
-    assert fox.writes(PATH_SCHEDULER_ENABLE) == []
-    assert fox.writes(PATH_SCHEDULER_SET) == []
+    assert fox.service_calls("set_schedule") == []
+    assert fox.service_calls("disable_scheduler") == []
 
 
-async def test_switch_defaults_are_safe(hass: HomeAssistant, fox: FakeFoxCloud) -> None:
-    await setup_bridge(hass)
+async def test_switch_defaults_are_safe(
+    hass: HomeAssistant, fox: FakeFoxessOpenApi
+) -> None:
+    await setup_bridge(hass, fox)
     assert state(hass, "switch", "bridge_enabled").state == "off"
     assert state(hass, "switch", "dry_run").state == "on"
 
 
 async def test_nothing_is_written_until_enabled_and_dry_run_is_off(
     hass: HomeAssistant,
-    fox: FakeFoxCloud,
+    fox: FakeFoxessOpenApi,
     freezer: FrozenDateTimeFactory,
     load_fixture: Callable,
 ) -> None:
     freezer.move_to(PLAN_TIME)
-    await setup_bridge(hass)
+    await setup_bridge(hass, fox)
     publish_plan(hass, load_fixture)
     await settle(hass, freezer)
 
     await turn(hass, "bridge_enabled", on=True)
     assert state(hass, "sensor", "apply_result").state == "dry_run"
-    assert fox.writes(PATH_SCHEDULER_ENABLE) == []
+    assert fox.service_calls("set_schedule") == []
 
     await turn(hass, "dry_run", on=False)
-    assert fox.writes(PATH_SCHEDULER_ENABLE) == [
-        {"deviceSN": SN, "groups": [NIGHT_GROUP]}
-    ]
-    assert fox.writes(PATH_SCHEDULER_SET) == [{"deviceSN": SN, "enable": 1}]
+    assert fox.service_calls("set_schedule") == [WRITE]
     assert state(hass, "sensor", "apply_result").state == "written"
     active = state(hass, "sensor", "active_schedule")
     assert active.state == "ForceCharge 02:00-04:59"
     assert active.attributes["scheduler_enabled"] is True
-    last_apply = state(hass, "sensor", "last_apply")
-    assert last_apply.state == dt_util.utcnow().isoformat()
+    assert state(hass, "sensor", "last_apply").state == dt_util.utcnow().isoformat()
 
 
 async def test_switches_persist_in_the_entry_options(
-    hass: HomeAssistant, fox: FakeFoxCloud
+    hass: HomeAssistant, fox: FakeFoxessOpenApi
 ) -> None:
-    entry = await setup_bridge(hass)
+    entry = await setup_bridge(hass, fox)
     await turn(hass, "bridge_enabled", on=True)
     await turn(hass, "dry_run", on=False)
     assert entry.options[CONF_ENABLED] is True
@@ -110,86 +107,87 @@ async def test_switches_persist_in_the_entry_options(
 
 async def test_unchanged_schedule_is_not_rewritten(
     hass: HomeAssistant,
-    fox: FakeFoxCloud,
+    fox: FakeFoxessOpenApi,
     freezer: FrozenDateTimeFactory,
     load_fixture: Callable,
 ) -> None:
     freezer.move_to(PLAN_TIME)
     fox.groups = [NIGHT_GROUP]
     fox.flag_enabled = True
+    fox.publish()
     publish_plan(hass, load_fixture)
-    await setup_bridge(hass, LIVE)
+    await setup_bridge(hass, fox, LIVE)
     await settle(hass, freezer)
 
     assert state(hass, "sensor", "apply_result").state == "unchanged"
-    assert fox.writes(PATH_SCHEDULER_ENABLE) == []
-    assert fox.writes(PATH_SCHEDULER_SET) == []
+    assert fox.service_calls("set_schedule") == []
+    assert fox.service_calls("disable_scheduler") == []
 
 
-async def test_scheduler_flag_is_left_alone_when_already_on(
+async def test_inverter_min_soc_on_grid_is_used_for_the_groups(
     hass: HomeAssistant,
-    fox: FakeFoxCloud,
+    fox: FakeFoxessOpenApi,
     freezer: FrozenDateTimeFactory,
     load_fixture: Callable,
 ) -> None:
     freezer.move_to(PLAN_TIME)
-    fox.flag_enabled = True
-    await setup_bridge(hass, LIVE)
+    fox.min_soc_on_grid = 20
+    fox.publish()
+    await setup_bridge(hass, fox)
     publish_plan(hass, load_fixture)
     await settle(hass, freezer)
-
-    assert fox.writes(PATH_SCHEDULER_ENABLE) == [
-        {"deviceSN": SN, "groups": [NIGHT_GROUP]}
-    ]
-    assert fox.writes(PATH_SCHEDULER_SET) == []
+    group = state(hass, "sensor", "planned_schedule").attributes["groups"][0]
+    assert group["minSocOnGrid"] == 20
+    assert group["fdSoc"] == 20
 
 
 async def test_quarter_hour_tick_reapplies_the_plan(
     hass: HomeAssistant,
-    fox: FakeFoxCloud,
+    fox: FakeFoxessOpenApi,
     freezer: FrozenDateTimeFactory,
     load_fixture: Callable,
 ) -> None:
     freezer.move_to(PLAN_TIME)
-    await setup_bridge(hass)
+    await setup_bridge(hass, fox)
     publish_plan(hass, load_fixture)
     await settle(hass, freezer)
-    reads = fox.reads()
+    reads = len(fox.service_calls("get_schedule"))
 
     await next_quarter(hass, freezer)
-    assert fox.reads() == reads + 1
+    assert len(fox.service_calls("get_schedule")) == reads + 1
 
 
 async def test_missing_plan_disables_the_scheduler_once(
-    hass: HomeAssistant, fox: FakeFoxCloud, freezer: FrozenDateTimeFactory
+    hass: HomeAssistant, fox: FakeFoxessOpenApi, freezer: FrozenDateTimeFactory
 ) -> None:
     freezer.move_to(PLAN_TIME)
     fox.groups = [NIGHT_GROUP]
     fox.flag_enabled = True
-    await setup_bridge(hass, LIVE)
+    fox.publish()
+    await setup_bridge(hass, fox, LIVE)
 
     stale = state(hass, "binary_sensor", "plan_stale")
     assert stale.state == "on"
     assert "sensor.p_batt_forecast" in stale.attributes["reason"]
     assert state(hass, "sensor", "apply_result").state == "cleared"
-    assert fox.writes(PATH_SCHEDULER_SET) == [{"deviceSN": SN, "enable": 0}]
-    assert fox.writes(PATH_SCHEDULER_ENABLE) == []
+    assert fox.service_calls("disable_scheduler") == [{"device_sn": SN}]
+    assert fox.service_calls("set_schedule") == []
     assert state(hass, "sensor", "active_schedule").state == "none"
 
     await next_quarter(hass, freezer)
     await next_quarter(hass, freezer)
-    assert len(fox.writes(PATH_SCHEDULER_SET)) == 1
+    assert len(fox.service_calls("disable_scheduler")) == 1
     assert state(hass, "sensor", "apply_result").state == "unchanged"
 
 
 async def test_plan_older_than_the_limit_is_stale(
     hass: HomeAssistant,
-    fox: FakeFoxCloud,
+    fox: FakeFoxessOpenApi,
     freezer: FrozenDateTimeFactory,
     load_fixture: Callable,
 ) -> None:
     freezer.move_to(PLAN_TIME)
-    await setup_bridge(hass)
+    await setup_bridge(hass, fox)
     publish_plan(hass, load_fixture)
     await settle(hass, freezer)
     assert state(hass, "binary_sensor", "plan_stale").state == "off"
@@ -204,13 +202,13 @@ async def test_plan_older_than_the_limit_is_stale(
 
 async def test_rate_limit_blocks_writes_until_midnight_and_opens_an_issue(
     hass: HomeAssistant,
-    fox: FakeFoxCloud,
+    fox: FakeFoxessOpenApi,
     freezer: FrozenDateTimeFactory,
     load_fixture: Callable,
 ) -> None:
     freezer.move_to(PLAN_TIME)
-    fox.write_errno = 40400
-    await setup_bridge(hass, LIVE)
+    fox.fail_writes_with = RATE_LIMIT_MESSAGE
+    await setup_bridge(hass, fox, LIVE)
     publish_plan(hass, load_fixture)
     await settle(hass, freezer)
 
@@ -223,9 +221,9 @@ async def test_rate_limit_blocks_writes_until_midnight_and_opens_an_issue(
 
     calls = len(fox.calls)
     await next_quarter(hass, freezer)
-    assert len(fox.calls) == calls, "no API calls while the quota is exhausted"
+    assert len(fox.calls) == calls, "no service calls while the quota is exhausted"
 
-    fox.write_errno = 0
+    fox.fail_writes_with = None
     freezer.move_to("2026-01-15T23:00:30+00:00")
     publish_plan(hass, load_fixture)  # EMHASS kept publishing meanwhile
     await settle(hass, freezer)
@@ -240,40 +238,59 @@ async def test_rate_limit_blocks_writes_until_midnight_and_opens_an_issue(
     assert ir.async_get(hass).async_get_issue(DOMAIN, ISSUE_RATE_LIMITED) is None
 
 
+async def test_low_remaining_quota_pauses_writes_before_the_limit_hits(
+    hass: HomeAssistant,
+    fox: FakeFoxessOpenApi,
+    freezer: FrozenDateTimeFactory,
+    load_fixture: Callable,
+) -> None:
+    freezer.move_to(PLAN_TIME)
+    fox.api_remaining = 30
+    fox.publish()
+    await setup_bridge(hass, fox, LIVE)
+    publish_plan(hass, load_fixture)
+    await settle(hass, freezer)
+
+    assert state(hass, "sensor", "apply_result").state == "rate_limited"
+    assert "remaining" in state(hass, "sensor", "last_apply").attributes["detail"]
+    assert fox.service_calls("set_schedule") == []
+    assert ir.async_get(hass).async_get_issue(DOMAIN, ISSUE_RATE_LIMITED) is not None
+
+
 async def test_lagging_readback_does_not_trigger_a_second_write(
     hass: HomeAssistant,
-    fox: FakeFoxCloud,
+    fox: FakeFoxessOpenApi,
     freezer: FrozenDateTimeFactory,
     load_fixture: Callable,
 ) -> None:
     freezer.move_to(PLAN_TIME)
     fox.apply_writes = False
-    await setup_bridge(hass, LIVE)
+    await setup_bridge(hass, fox, LIVE)
     publish_plan(hass, load_fixture)
     await settle(hass, freezer)
-    assert len(fox.writes(PATH_SCHEDULER_ENABLE)) == 1
+    assert len(fox.service_calls("set_schedule")) == 1
 
     publish_plan(hass, load_fixture)
     await settle(hass, freezer)  # about 30 s after the write: cloud still lags
-    assert len(fox.writes(PATH_SCHEDULER_ENABLE)) == 1
+    assert len(fox.service_calls("set_schedule")) == 1
     assert state(hass, "sensor", "apply_result").state == "pending"
     assert state(hass, "sensor", "active_schedule").state == "ForceCharge 02:00-04:59"
 
     publish_plan(hass, load_fixture)
     await settle(hass, freezer, seconds=61)  # past the settle window: rewrite
-    assert len(fox.writes(PATH_SCHEDULER_ENABLE)) == 2
+    assert len(fox.service_calls("set_schedule")) == 2
     assert state(hass, "sensor", "apply_result").state == "written"
 
 
-async def test_api_errors_are_reported_not_raised(
+async def test_backend_errors_are_reported_not_raised(
     hass: HomeAssistant,
-    fox: FakeFoxCloud,
+    fox: FakeFoxessOpenApi,
     freezer: FrozenDateTimeFactory,
     load_fixture: Callable,
 ) -> None:
     freezer.move_to(PLAN_TIME)
-    fox.read_errno = 41200
-    entry = await setup_bridge(hass, LIVE)
+    fox.fail_reads_with = "FoxESS API error 41200: bad request"
+    entry = await setup_bridge(hass, fox, LIVE)
     publish_plan(hass, load_fixture)
     await settle(hass, freezer)
 
@@ -285,14 +302,14 @@ async def test_api_errors_are_reported_not_raised(
 
 async def test_planner_options_change_the_plan(
     hass: HomeAssistant,
-    fox: FakeFoxCloud,
+    fox: FakeFoxessOpenApi,
     freezer: FrozenDateTimeFactory,
     load_fixture: Callable,
 ) -> None:
     """A 15-minute minimum window lets the single cheap 13:00 slot through."""
     freezer.move_to(PLAN_TIME)
     publish_plan(hass, load_fixture)
-    await setup_bridge(hass, {CONF_MIN_WINDOW_MINUTES: 15})
+    await setup_bridge(hass, fox, {CONF_MIN_WINDOW_MINUTES: 15})
     await settle(hass, freezer)
     assert state(hass, "sensor", "planned_schedule").state == (
         "ForceCharge 02:00-04:59, ForceCharge 13:00-13:14"

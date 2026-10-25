@@ -1,0 +1,444 @@
+[
+ {
+  "entity_id": "sensor.foxess_test_plant_pv_power",
+  "state": "0.0",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "kW",
+   "device_class": "power",
+   "friendly_name": "FoxESS Tr\u00f6tsch  PV power"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_pv1_power",
+  "state": "0.0",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "kW",
+   "device_class": "power",
+   "friendly_name": "FoxESS Tr\u00f6tsch  PV1 power"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_pv2_power",
+  "state": "0.0",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "kW",
+   "device_class": "power",
+   "friendly_name": "FoxESS Tr\u00f6tsch  PV2 power"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_load_power",
+  "state": "0.651",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "kW",
+   "device_class": "power",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Load power"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_grid_import_power",
+  "state": "1.151",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "kW",
+   "device_class": "power",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Grid import power"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_grid_export_power",
+  "state": "0.0",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "kW",
+   "device_class": "power",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Grid export power"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_inverter_output_power",
+  "state": "-0.499",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "kW",
+   "device_class": "power",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Inverter output power"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_battery_soc",
+  "state": "9.0",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "%",
+   "device_class": "battery",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Battery SoC"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_battery_soh",
+  "state": "97.0",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "%",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Battery SoH"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_battery_temperature",
+  "state": "29.3",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "\u00b0C",
+   "device_class": "temperature",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Battery temperature"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_battery_power_discharge_charge",
+  "state": "-0.499",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "kW",
+   "device_class": "power",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Battery power (+discharge/-charge)"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_battery_charge_power",
+  "state": "0.499",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "kW",
+   "device_class": "power",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Battery charge power"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_battery_discharge_power",
+  "state": "0.0",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "kW",
+   "device_class": "power",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Battery discharge power"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_grid_voltage",
+  "state": "231.5",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "V",
+   "device_class": "voltage",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Grid voltage"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_grid_frequency",
+  "state": "49.97",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "Hz",
+   "device_class": "frequency",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Grid frequency"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_inverter_temperature",
+  "state": "31.0",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "\u00b0C",
+   "device_class": "temperature",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Inverter temperature"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_ambient_temperature",
+  "state": "46.4",
+  "attributes": {
+   "state_class": "measurement",
+   "inverter_time": null,
+   "unit_of_measurement": "\u00b0C",
+   "device_class": "temperature",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Ambient temperature"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_current_fault",
+  "state": "",
+  "attributes": {
+   "inverter_time": null,
+   "friendly_name": "FoxESS Tr\u00f6tsch  Current fault"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_pv_energy_total",
+  "state": "11562.5",
+  "attributes": {
+   "state_class": "total_increasing",
+   "inverter_time": null,
+   "unit_of_measurement": "kWh",
+   "device_class": "energy",
+   "friendly_name": "FoxESS Tr\u00f6tsch  PV energy total"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_generation_total",
+  "state": "8875.0",
+  "attributes": {
+   "state_class": "total_increasing",
+   "inverter_time": null,
+   "unit_of_measurement": "kWh",
+   "device_class": "energy",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Generation total"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_grid_export_total",
+  "state": "4578.4",
+  "attributes": {
+   "state_class": "total_increasing",
+   "inverter_time": null,
+   "unit_of_measurement": "kWh",
+   "device_class": "energy",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Grid export total"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_grid_import_total",
+  "state": "2424.1",
+  "attributes": {
+   "state_class": "total_increasing",
+   "inverter_time": null,
+   "unit_of_measurement": "kWh",
+   "device_class": "energy",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Grid import total"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_load_energy_total",
+  "state": "7051.6",
+  "attributes": {
+   "state_class": "total_increasing",
+   "inverter_time": null,
+   "unit_of_measurement": "kWh",
+   "device_class": "energy",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Load energy total"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_battery_charge_total",
+  "state": "2962.7",
+  "attributes": {
+   "state_class": "total_increasing",
+   "inverter_time": null,
+   "unit_of_measurement": "kWh",
+   "device_class": "energy",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Battery charge total"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_battery_discharge_total",
+  "state": "4162.2",
+  "attributes": {
+   "state_class": "total_increasing",
+   "inverter_time": null,
+   "unit_of_measurement": "kWh",
+   "device_class": "energy",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Battery discharge total"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_running_state",
+  "state": "on-grid",
+  "attributes": {
+   "options": [
+    "self-test",
+    "waiting",
+    "checking",
+    "on-grid",
+    "off-grid",
+    "fault",
+    "permanent-fault",
+    "standby",
+    "upgrading",
+    "fct",
+    "illegal",
+    "unknown"
+   ],
+   "device_class": "enum",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Running state"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_schedule",
+  "state": "0 active group(s)",
+  "attributes": {
+   "master_switch": 0,
+   "groups": [
+    {
+     "enable": 0,
+     "startHour": 0,
+     "startMinute": 0,
+     "endHour": 0,
+     "endMinute": 0,
+     "workMode": "SelfUse",
+     "minSocOnGrid": 10,
+     "fdSoc": 10,
+     "fdPwr": 0,
+     "maxSoc": 100
+    },
+    {
+     "enable": 0,
+     "startHour": 0,
+     "startMinute": 0,
+     "endHour": 0,
+     "endMinute": 0,
+     "workMode": "SelfUse",
+     "minSocOnGrid": 10,
+     "fdSoc": 10,
+     "fdPwr": 0,
+     "maxSoc": 100
+    },
+    {
+     "enable": 0,
+     "startHour": 0,
+     "startMinute": 0,
+     "endHour": 0,
+     "endMinute": 0,
+     "workMode": "SelfUse",
+     "minSocOnGrid": 10,
+     "fdSoc": 10,
+     "fdPwr": 0,
+     "maxSoc": 100
+    },
+    {
+     "enable": 0,
+     "startHour": 0,
+     "startMinute": 0,
+     "endHour": 0,
+     "endMinute": 0,
+     "workMode": "SelfUse",
+     "minSocOnGrid": 10,
+     "fdSoc": 10,
+     "fdPwr": 0,
+     "maxSoc": 100
+    },
+    {
+     "enable": 0,
+     "startHour": 0,
+     "startMinute": 0,
+     "endHour": 0,
+     "endMinute": 0,
+     "workMode": "SelfUse",
+     "minSocOnGrid": 10,
+     "fdSoc": 10,
+     "fdPwr": 0,
+     "maxSoc": 100
+    },
+    {
+     "enable": 0,
+     "startHour": 0,
+     "startMinute": 0,
+     "endHour": 0,
+     "endMinute": 0,
+     "workMode": "SelfUse",
+     "minSocOnGrid": 10,
+     "fdSoc": 10,
+     "fdPwr": 0,
+     "maxSoc": 100
+    },
+    {
+     "enable": 0,
+     "startHour": 0,
+     "startMinute": 0,
+     "endHour": 0,
+     "endMinute": 0,
+     "workMode": "SelfUse",
+     "minSocOnGrid": 10,
+     "fdSoc": 10,
+     "fdPwr": 0,
+     "maxSoc": 100
+    },
+    {
+     "enable": 0,
+     "startHour": 0,
+     "startMinute": 0,
+     "endHour": 0,
+     "endMinute": 0,
+     "workMode": "SelfUse",
+     "minSocOnGrid": 10,
+     "fdSoc": 10,
+     "fdPwr": 0,
+     "maxSoc": 100
+    }
+   ],
+   "icon": "mdi:calendar-clock",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Schedule"
+  }
+ },
+ {
+  "entity_id": "sensor.foxess_test_plant_api_calls_remaining",
+  "state": "unknown",
+  "attributes": {
+   "state_class": "measurement",
+   "total": "\u221e",
+   "icon": "mdi:api",
+   "friendly_name": "FoxESS Tr\u00f6tsch  API calls remaining"
+  }
+ },
+ {
+  "entity_id": "number.foxess_test_plant_battery_min_soc_off_grid",
+  "state": "10.0",
+  "attributes": {
+   "min": 10,
+   "max": 100,
+   "step": 1,
+   "mode": "box",
+   "unit_of_measurement": "%",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Battery min SoC (off-grid)"
+  }
+ },
+ {
+  "entity_id": "number.foxess_test_plant_battery_min_soc_on_grid",
+  "state": "10.0",
+  "attributes": {
+   "min": 10,
+   "max": 100,
+   "step": 1,
+   "mode": "box",
+   "unit_of_measurement": "%",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Battery min SoC (on-grid)"
+  }
+ },
+ {
+  "entity_id": "switch.foxess_test_plant_scheduler_mode_scheduler",
+  "state": "off",
+  "attributes": {
+   "icon": "mdi:calendar-sync",
+   "friendly_name": "FoxESS Tr\u00f6tsch  Scheduler (mode scheduler)"
+  }
+ }
+]

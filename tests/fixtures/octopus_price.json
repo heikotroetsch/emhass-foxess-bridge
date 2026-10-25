@@ -1,0 +1,28 @@
+{
+ "entity_id": "sensor.octopus_energy_germany_a_testacct_octopus_a_testacct_electricity_price",
+ "state": "0.315469",
+ "attributes": {
+  "active_tariff_type": "Simple",
+  "type": "Simple",
+  "code": "DEU-ELECTRICITY-DYNAMIC-OCTOPUS-LIGHT-12",
+  "description": "Interim Tariff for Dynamischer Tarif von Octopus Energy until customer received Smart Meter installed",
+  "unit_of_measurement": "€/kWh",
+  "state_class": "total",
+  "device_class": "monetary",
+  "valid_from": "2026-05-14T22:00:00+00:00",
+  "valid_to": "2027-05-14T22:00:00+00:00",
+  "agreement_is_active": true,
+  "friendly_name": "Octopus Energy Germany Electricity Price",
+  "agreement_prices": [
+   {
+    "gross_cents_per_kwh": "31.5469",
+    "gross_eur_per_kwh": 0.315469,
+    "net_cents_per_kwh": "26.5100",
+    "vat_percent": "19",
+    "price_valid_from": "2026-05-15",
+    "price_valid_to": null
+   }
+  ]
+ },
+ "_note": "Interim 'Simple' tariff before the dynamic tariff is active: no rates or unit_rate_forecast attributes yet."
+}

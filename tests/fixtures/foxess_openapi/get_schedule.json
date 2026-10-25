@@ -1,0 +1,182 @@
+{
+ "changed_states": [],
+ "service_response": {
+  "enable": 0,
+  "groups": [
+   {
+    "endHour": 0,
+    "fdPwr": 0,
+    "minSocOnGrid": 10,
+    "workMode": "SelfUse",
+    "fdSoc": 10,
+    "enable": 0,
+    "startHour": 0,
+    "maxSoc": 100,
+    "startMinute": 0,
+    "endMinute": 0
+   },
+   {
+    "endHour": 0,
+    "fdPwr": 0,
+    "minSocOnGrid": 10,
+    "workMode": "SelfUse",
+    "fdSoc": 10,
+    "enable": 0,
+    "startHour": 0,
+    "maxSoc": 100,
+    "startMinute": 0,
+    "endMinute": 0
+   },
+   {
+    "endHour": 0,
+    "fdPwr": 0,
+    "minSocOnGrid": 10,
+    "workMode": "SelfUse",
+    "fdSoc": 10,
+    "enable": 0,
+    "startHour": 0,
+    "maxSoc": 100,
+    "startMinute": 0,
+    "endMinute": 0
+   },
+   {
+    "endHour": 0,
+    "fdPwr": 0,
+    "minSocOnGrid": 10,
+    "workMode": "SelfUse",
+    "fdSoc": 10,
+    "enable": 0,
+    "startHour": 0,
+    "maxSoc": 100,
+    "startMinute": 0,
+    "endMinute": 0
+   },
+   {
+    "endHour": 0,
+    "fdPwr": 0,
+    "minSocOnGrid": 10,
+    "workMode": "SelfUse",
+    "fdSoc": 10,
+    "enable": 0,
+    "startHour": 0,
+    "maxSoc": 100,
+    "startMinute": 0,
+    "endMinute": 0
+   },
+   {
+    "endHour": 0,
+    "fdPwr": 0,
+    "minSocOnGrid": 10,
+    "workMode": "SelfUse",
+    "fdSoc": 10,
+    "enable": 0,
+    "startHour": 0,
+    "maxSoc": 100,
+    "startMinute": 0,
+    "endMinute": 0
+   },
+   {
+    "endHour": 0,
+    "fdPwr": 0,
+    "minSocOnGrid": 10,
+    "workMode": "SelfUse",
+    "fdSoc": 10,
+    "enable": 0,
+    "startHour": 0,
+    "maxSoc": 100,
+    "startMinute": 0,
+    "endMinute": 0
+   },
+   {
+    "endHour": 0,
+    "fdPwr": 0,
+    "minSocOnGrid": 10,
+    "workMode": "SelfUse",
+    "fdSoc": 10,
+    "enable": 0,
+    "startHour": 0,
+    "maxSoc": 100,
+    "startMinute": 0,
+    "endMinute": 0
+   }
+  ],
+  "properties": {
+   "startminute": {
+    "unit": "",
+    "precision": 1.0,
+    "range": {
+     "min": 0.0,
+     "max": 59.0
+    }
+   },
+   "fdpwr": {
+    "unit": "W",
+    "precision": 1.0,
+    "range": {
+     "min": 0.0,
+     "max": 12000.0
+    }
+   },
+   "endhour": {
+    "unit": "",
+    "precision": 1.0,
+    "range": {
+     "min": 0.0,
+     "max": 23.0
+    }
+   },
+   "endminute": {
+    "unit": "",
+    "precision": 1.0,
+    "range": {
+     "min": 0.0,
+     "max": 59.0
+    }
+   },
+   "fdsoc": {
+    "unit": "%",
+    "precision": 1.0,
+    "range": {
+     "min": 10.0,
+     "max": 100.0
+    }
+   },
+   "starthour": {
+    "unit": "",
+    "precision": 1.0,
+    "range": {
+     "min": 0.0,
+     "max": 23.0
+    }
+   },
+   "workmode": {
+    "enumList": [
+     "ForceDischarge",
+     "PeakShaving",
+     "Feedin",
+     "Backup",
+     "SelfUse",
+     "ForceCharge"
+    ],
+    "unit": "",
+    "precision": 1.0
+   },
+   "minsocongrid": {
+    "unit": "%",
+    "precision": 1.0,
+    "range": {
+     "min": 10.0,
+     "max": 100.0
+    }
+   },
+   "maxsoc": {
+    "unit": "%",
+    "precision": 1.0,
+    "range": {
+     "min": 10.0,
+     "max": 100.0
+    }
+   }
+  }
+ }
+}
