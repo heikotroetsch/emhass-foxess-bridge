@@ -1,4 +1,8 @@
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "contract: read-only tests against the real FoxESS Open API (needs .env)",
+    "writes: tests that write to the real inverter (needs FOX_ALLOW_WRITES=1)",
+]
 filterwarnings = ["error::DeprecationWarning:custom_components.*"]
