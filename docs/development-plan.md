@@ -51,7 +51,7 @@ one commit. Target: Home Assistant 2026.10.4 only.
 - Their power sensors are in kW and are not converted. EMHASS reads raw
   states in W, so `examples/emhass/` provides template sensors.
 
-## Status (2026-10-25, evening)
+## Status (2026-10-25, night)
 
 | Milestone | State |
 | --- | --- |
@@ -59,8 +59,8 @@ one commit. Target: Home Assistant 2026.10.4 only.
 | 2 Apply loop | done on the service backend |
 | 3 Options, services, diagnostics | done on the service backend |
 | 7 Backend swap | done 2026-10-25 (112 tests) |
-| 4 Real-system contract | **next**: fixtures recorded, fake-vs-recording test and write-cycle script open |
-| 5 Field test | ha-foxess-openapi runs at the parents' HA; EMHASS and the dynamic tariff are open |
+| 4 Real-system contract | recordings and `tests/contract` done; `scripts/write_cycle.py` ready, **not yet run** (needs Heiko's go) |
+| 5 Field test | bridge deployed and configured at the parents' HA in dry run (2026-10-25 23:01); EMHASS config and the dynamic tariff are open |
 | 6 Release 0.1.0 | after 5 |
 
 ## Test pyramid
