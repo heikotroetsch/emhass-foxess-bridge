@@ -1,34 +1,42 @@
 name: Release
 
-# Publishing a GitHub release (tag vX.Y.Z) builds the zip HACS downloads.
-# The tag must equal the version in manifest.json; scripts/release does both.
+# Pushing a tag vX.Y.Z creates the GitHub release with the zip HACS installs.
+# A tag with a suffix such as v0.2.0-beta.1 becomes a pre-release. The tag must
+# equal the version in manifest.json; `scripts/release X.Y.Z --push` does all of
+# it. Re-run for an existing tag with "Run workflow" and the tag name.
 
 on:
-  release:
-    types:
-      - published
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build, for example v0.1.0"
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 jobs:
   release:
-    name: "Build and attach the HACS zip"
+    name: "Build the HACS zip and publish the release"
     runs-on: "ubuntu-latest"
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
     steps:
-      - name: Checkout the release tag
+      - name: Checkout the tag
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ inputs.tag || github.ref_name }}
           persist-credentials: false
 
       - name: Check that the tag matches manifest.json
-        env:
-          TAG: ${{ github.event.release.tag_name }}
         run: |
           VERSION=$(python3 -c "import json; print(json.load(open('custom_components/emhass_foxess_bridge/manifest.json'))['version'])")
           if [ "${TAG#v}" != "${VERSION}" ]; then
-            echo "::error::release tag ${TAG} does not match manifest.json version ${VERSION}. Run scripts/release ${TAG#v} and tag again."
+            echo "::error::tag ${TAG} does not match manifest.json version ${VERSION}. Use scripts/release ${TAG#v}."
             exit 1
           fi
           echo "releasing version ${VERSION}"
@@ -58,8 +66,39 @@ jobs:
           cd ../..
           unzip -l emhass_foxess_bridge.zip
 
-      - name: Attach the zip to the release
+      - name: Release notes from CHANGELOG.md
+        run: |
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+          version = os.environ["TAG"].removeprefix("v")
+          text = Path("CHANGELOG.md").read_text()
+          match = re.search(rf"^## \[{re.escape(version)}\][^\n]*\n(.*?)(?=^## \[|\Z)", text, re.S | re.M)
+          body = match.group(1).strip() if match else ""
+          if not body:
+              body = "See CHANGELOG.md."
+          notes = (
+              f"{body}\n\n"
+              "## Install\n\n"
+              "HACS: add this repository as a custom repository of type *Integration*, "
+              "then install this version (pre-releases need *Show beta versions*). "
+              "Manual: unpack `emhass_foxess_bridge.zip` into `config/custom_components/emhass_foxess_bridge/`.\n"
+          )
+          Path("release_notes.md").write_text(notes)
+          print(notes)
+          PY
+
+      - name: Create or update the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "${TAG}" emhass_foxess_bridge.zip --clobber
+        run: |
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "release ${TAG} exists, replacing the asset"
+            gh release upload "${TAG}" emhass_foxess_bridge.zip --clobber
+          else
+            PRERELEASE=""
+            case "${TAG}" in *-*) PRERELEASE="--prerelease" ;; esac
+            gh release create "${TAG}" emhass_foxess_bridge.zip \
+              --verify-tag --title "${TAG}" --notes-file release_notes.md ${PRERELEASE}
+          fi
+          gh release view "${TAG}" --json tagName,isPrerelease,assets --jq '{tag: .tagName, prerelease: .isPrerelease, assets: [.assets[].name]}'

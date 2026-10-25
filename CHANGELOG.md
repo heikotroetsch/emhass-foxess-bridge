@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Pushing a `v*` tag now creates the GitHub release with the HACS zip; no
+  manual release step. `scripts/release X.Y.Z --push` does the whole cut.
+- Documentation reorganised into architecture, testing and field notes.
+- Purpose stated: Enpal/FoxESS systems on the Octopus Energy dynamic
+  tariff with EMHASS day-ahead optimisation.
+- Canonical MIT license text so GitHub and HACS identify the license.
+
 ## [0.1.0-beta.1] - 2026-10-25
 
 ### Added

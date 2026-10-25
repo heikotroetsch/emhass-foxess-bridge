@@ -34,10 +34,12 @@ real ha-foxess-openapi services and restores the snapshot; it needs
 
 ## Releasing
 
-`scripts/release 0.2.0` bumps `manifest.json`, moves the *Unreleased*
-section of `CHANGELOG.md` under the new version, commits and tags `v0.2.0`.
-Push the tag, publish a GitHub release for it, and the *Release* workflow
-attaches the zip HACS installs.
+`scripts/release 0.2.0 --push` bumps `manifest.json`, moves the
+*Unreleased* section of `CHANGELOG.md` under the new version, commits, tags
+`v0.2.0` and pushes. The *Release* workflow then creates the GitHub release
+with the notes from the changelog and the zip HACS installs. A version with a
+suffix (`0.2.0-beta.1`) becomes a pre-release, which HACS shows only with
+*Show beta versions*.
 
 ## Rules
 
