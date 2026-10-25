@@ -7,8 +7,14 @@ from unittest.mock import patch
 
 import pytest
 
+from .fake_fox import FakeFoxCloud
+
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Callable, Generator
+
+    from pytest_homeassistant_custom_component.test_util.aiohttp import (
+        AiohttpClientMocker,
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -28,3 +34,9 @@ def _no_write_pacing() -> Generator[None]:
         "custom_components.emhass_foxess_bridge.api.MIN_SECONDS_BETWEEN_WRITES", 0
     ):
         yield
+
+
+@pytest.fixture
+def fox(aioclient_mock: AiohttpClientMocker, load_fixture: Callable) -> FakeFoxCloud:
+    """Fake FoxESS cloud answering every endpoint the bridge calls."""
+    return FakeFoxCloud(aioclient_mock, load_fixture)
