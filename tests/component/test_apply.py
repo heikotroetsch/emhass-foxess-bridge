@@ -229,7 +229,14 @@ async def test_rate_limit_blocks_writes_until_midnight_and_opens_an_issue(
     freezer.move_to("2026-01-15T23:00:30+00:00")
     publish_plan(hass, load_fixture)  # EMHASS kept publishing meanwhile
     await settle(hass, freezer)
-    assert state(hass, "sensor", "apply_result").state == "written"
+    # The jump past midnight also fires the pending quarter-hour tick, so one
+    # or two runs happen here; what matters is the effect on the inverter.
+    assert fox.groups == [NIGHT_GROUP]
+    assert fox.flag_enabled is True
+    assert state(hass, "sensor", "apply_result").state in ("written", "unchanged")
+    assert (
+        state(hass, "sensor", "apply_result").attributes["writes_blocked_until"] is None
+    )
     assert ir.async_get(hass).async_get_issue(DOMAIN, ISSUE_RATE_LIMITED) is None
 
 
