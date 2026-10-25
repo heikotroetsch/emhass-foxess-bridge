@@ -1,11 +1,13 @@
 {
   "domain": "emhass_foxess_bridge",
   "name": "EMHASS FoxESS Bridge",
-  "codeowners": ["@heikotroetsch"],
+  "codeowners": [
+    "@heikotroetsch"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/heikotroetsch/emhass-foxess-bridge",
   "integration_type": "device",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/heikotroetsch/emhass-foxess-bridge/issues",
-  "version": "0.1.0"
+  "version": "0.1.0-beta.1"
 }

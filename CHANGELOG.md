@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0-beta.1] - 2026-10-25
+
 ### Added
 
 - Planner that turns the EMHASS battery plan (`sensor.p_batt_forecast` with
