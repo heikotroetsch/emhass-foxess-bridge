@@ -10,13 +10,38 @@ DOMAIN = "emhass_foxess_bridge"
 NAME = "EMHASS FoxESS Bridge"
 ATTRIBUTION = "Data from the FoxESS Cloud Open API"
 
+# Config entry data
 CONF_API_KEY = "api_key"
 CONF_DEVICE_SN = "device_sn"
 CONF_EMHASS_ENTITY = "emhass_entity"
+CONF_EMHASS_GRID_ENTITY = "emhass_grid_entity"
+
+# Config entry options (switches and planner tunables)
+CONF_ENABLED = "enabled"
 CONF_DRY_RUN = "dry_run"
+CONF_CHARGE_THRESHOLD_W = "charge_threshold_w"
+CONF_MIN_WINDOW_MINUTES = "min_window_minutes"
+CONF_MAX_GROUPS = "max_groups"
+CONF_PLAN_MAX_AGE_HOURS = "plan_max_age_hours"
 
 DEFAULT_EMHASS_ENTITY = "sensor.p_batt_forecast"
+DEFAULT_EMHASS_GRID_ENTITY = "sensor.p_grid_forecast"
+DEFAULT_ENABLED = False
+DEFAULT_DRY_RUN = True
+DEFAULT_PLAN_MAX_AGE_HOURS = 3
 DEFAULT_SCAN_INTERVAL_MINUTES = 5
+
+# EMHASS attribute names (RetrieveHass.get_attr_data_dict)
+ATTR_BATTERY_SCHEDULE = "battery_scheduled_power"
+ATTR_GRID_FORECAST = "forecasts"
+
+# Apply loop timing
+APPLY_MINUTES: tuple[int, ...] = (0, 15, 30, 45)
+APPLY_SECOND = 20
+PLAN_SETTLE_SECONDS = 30  # coalesce the two EMHASS sensors into one run
+WRITE_SETTLE_SECONDS = 60  # FoxESS reads may lag behind a write this long
+
+ISSUE_RATE_LIMITED = "rate_limited"
 
 # Variables requested from /op/v1/device/real/query. Keys match the Open API
 # variable names; the sensor platform maps them to entities.

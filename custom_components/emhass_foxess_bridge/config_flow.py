@@ -21,7 +21,9 @@ from .const import (
     CONF_API_KEY,
     CONF_DEVICE_SN,
     CONF_EMHASS_ENTITY,
+    CONF_EMHASS_GRID_ENTITY,
     DEFAULT_EMHASS_ENTITY,
+    DEFAULT_EMHASS_GRID_ENTITY,
     DOMAIN,
     LOGGER,
 )
@@ -83,6 +85,14 @@ class BridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_EMHASS_ENTITY,
                         default=(user_input or {}).get(
                             CONF_EMHASS_ENTITY, DEFAULT_EMHASS_ENTITY
+                        ),
+                    ): selector.EntitySelector(
+                        selector.EntitySelectorConfig(domain="sensor")
+                    ),
+                    vol.Optional(
+                        CONF_EMHASS_GRID_ENTITY,
+                        default=(user_input or {}).get(
+                            CONF_EMHASS_GRID_ENTITY, DEFAULT_EMHASS_GRID_ENTITY
                         ),
                     ): selector.EntitySelector(
                         selector.EntitySelectorConfig(domain="sensor")

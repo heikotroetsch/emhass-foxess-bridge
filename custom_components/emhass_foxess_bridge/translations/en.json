@@ -3,11 +3,16 @@
         "step": {
             "user": {
                 "title": "Connect your FoxESS inverter",
-                "description": "Create an API key in FoxESS Cloud under User Profile > API Management. The device serial is the inverter SN shown under Devices.",
+                "description": "Create an API key in FoxESS Cloud under User Profile > API Management. The device serial is the inverter SN shown under Devices. The plan sensors are the ones EMHASS publishes.",
                 "data": {
                     "api_key": "FoxESS Open API key",
                     "device_sn": "Inverter serial number",
-                    "emhass_entity": "EMHASS battery plan sensor"
+                    "emhass_entity": "EMHASS battery plan sensor",
+                    "emhass_grid_entity": "EMHASS grid forecast sensor"
+                },
+                "data_description": {
+                    "emhass_entity": "Usually sensor.p_batt_forecast. Its battery_scheduled_power attribute is the plan.",
+                    "emhass_grid_entity": "Usually sensor.p_grid_forecast. Used to tell grid charging from PV surplus charging."
                 }
             }
         },
@@ -22,6 +27,12 @@
         },
         "abort": {
             "already_configured": "This inverter is already configured."
+        }
+    },
+    "issues": {
+        "rate_limited": {
+            "title": "FoxESS API request limit exhausted",
+            "description": "The FoxESS Cloud Open API allows 1440 requests per inverter and day and that quota is used up. The bridge pauses all API calls and resumes at {resume_at}. If this happens regularly, check for other integrations or scripts using the same API key."
         }
     }
 }

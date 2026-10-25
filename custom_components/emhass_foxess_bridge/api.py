@@ -41,6 +41,7 @@ PATH_SCHEDULER_GET = "/op/v0/device/scheduler/get"
 PATH_SCHEDULER_ENABLE = "/op/v0/device/scheduler/enable"
 PATH_SCHEDULER_SET = "/op/v0/device/scheduler/set"
 PATH_ACCESS_COUNT = "/op/v0/user/getAccessCount"
+PATH_BATTERY_SOC = "/op/v0/device/battery/soc/get"
 
 
 class FoxApiError(Exception):
@@ -223,6 +224,11 @@ class FoxOpenApiClient:
         await self._write(
             PATH_SCHEDULER_SET, {"deviceSN": device_sn, "enable": int(enabled)}
         )
+
+    async def async_get_battery_soc(self, device_sn: str) -> dict[str, Any]:
+        """Return {'minSoc': int, 'minSocOnGrid': int} as configured on the inverter."""
+        result = await self._request("GET", PATH_BATTERY_SOC, params={"sn": device_sn})
+        return result if isinstance(result, dict) else {}
 
     async def async_get_access_count(self) -> dict[str, Any]:
         """Return the daily request quota ('total' and 'remaining')."""

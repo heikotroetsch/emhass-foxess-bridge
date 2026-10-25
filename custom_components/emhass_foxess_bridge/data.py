@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
     from .api import FoxOpenApiClient
     from .coordinator import BridgeCoordinator
+    from .schedule_coordinator import ScheduleCoordinator
 
 
 type BridgeConfigEntry = ConfigEntry[BridgeRuntimeData]
@@ -21,5 +22,7 @@ class BridgeRuntimeData:
 
     client: FoxOpenApiClient
     coordinator: BridgeCoordinator
+    schedule: ScheduleCoordinator
     device_sn: str
     device_detail: dict[str, Any]
+    min_soc_on_grid: int
