@@ -13,10 +13,14 @@
   "set_battery_dynamic": false,
   "weight_battery_discharge": 0.0,
   "weight_battery_charge": 0.0,
-  "sensor_power_photovoltaics": "sensor.foxess_h3_5_0_e_pv_power",
-  "sensor_power_load_no_var_loads": "sensor.foxess_h3_5_0_e_load_power",
-  "sensor_replace_zero": ["sensor.foxess_h3_5_0_e_pv_power"],
-  "sensor_linear_interp": ["sensor.foxess_h3_5_0_e_load_power"],
+  "sensor_power_photovoltaics": "sensor.foxess_pv_power_w",
+  "sensor_power_load_no_var_loads": "sensor.foxess_load_power_w",
+  "sensor_replace_zero": [
+    "sensor.foxess_pv_power_w"
+  ],
+  "sensor_linear_interp": [
+    "sensor.foxess_load_power_w"
+  ],
   "load_negative": false,
   "set_zero_min": true,
   "number_of_deferrable_loads": 0,
@@ -28,12 +32,24 @@
   "photovoltaic_production_sell_price": 0.08,
   "maximum_power_from_grid": 9000,
   "maximum_power_to_grid": 9000,
-  "pv_module_model": ["CSUN_Eurasia_Energy_Systems_Industry_and_Trade_CSUN295_60M"],
-  "pv_inverter_model": ["Fronius_International_GmbH__Fronius_Primo_5_0_1_208_240__240V_"],
-  "surface_tilt": [30],
-  "surface_azimuth": [180],
-  "modules_per_string": [16],
-  "strings_per_inverter": [1],
+  "pv_module_model": [
+    "CSUN_Eurasia_Energy_Systems_Industry_and_Trade_CSUN295_60M"
+  ],
+  "pv_inverter_model": [
+    "Fronius_International_GmbH__Fronius_Primo_5_0_1_208_240__240V_"
+  ],
+  "surface_tilt": [
+    30
+  ],
+  "surface_azimuth": [
+    180
+  ],
+  "modules_per_string": [
+    16
+  ],
+  "strings_per_inverter": [
+    1
+  ],
   "inverter_is_hybrid": true,
   "compute_curtailment": false,
   "set_use_battery": true,

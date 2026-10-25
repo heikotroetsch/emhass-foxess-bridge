@@ -41,7 +41,7 @@ rest_command:
         "load_cost_forecast": {{ ns.prices | to_json }},
         "prod_price_forecast": {{ (ns.prices | map('multiply', 0) | map('add', 0.08) | list) | to_json }},
         "prediction_horizon": {{ ns.prices | count }},
-        "soc_init": {{ (states('sensor.foxess_h3_5_0_e_battery_soc') | float(50)) / 100 }},
+        "soc_init": {{ (states('sensor.foxess_station_battery_soc') | float(50)) / 100 }},
         "soc_final": 0.3
       }
 

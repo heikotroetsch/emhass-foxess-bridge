@@ -38,7 +38,14 @@ one commit. Target: Home Assistant 2026.10.4 only.
   schedule sensor (attributes `master_switch`, `groups`; polled every 30 min
   and refreshed after every write), number `{sn}_minSocOnGrid`, sensor
   `{sn}_api_remaining` (remaining daily quota).
-- Bridge entities attach to that same device.
+- Bridge entities live on their own service device "EMHASS bridge
+  <inverter>" linked to the inverter with `via_device_id`. Since HA 2026.10
+  device identifiers are unique per config entry, and child devices must
+  belong to the same entry, so joining the ha-foxess-openapi device is not
+  possible.
+- `get_schedule` does return the master flag as `enable` (recorded on the
+  H3, 2026-10-25), contrary to what their code reads; the backend uses it
+  and falls back to the scheduler switch and the schedule sensor.
 - Setup raises `ConfigEntryNotReady` until the `foxess_openapi` services are
   registered, so start-up order does not matter.
 - Their power sensors are in kW and are not converted. EMHASS reads raw
@@ -48,12 +55,12 @@ one commit. Target: Home Assistant 2026.10.4 only.
 
 | Milestone | State |
 | --- | --- |
-| 1 Planner core | done; `maxSoc` field to add in 7 |
-| 2 Apply loop | done on the direct API; to be ported in 7 |
-| 3 Options, services, diagnostics | done on the direct API; to be ported in 7 |
-| 7 Backend swap | **next** |
-| 4 Real-system contract | redefined below, after 7 |
-| 5 Field test | after 4 |
+| 1 Planner core | done, V1 groups with `maxSoc` |
+| 2 Apply loop | done on the service backend |
+| 3 Options, services, diagnostics | done on the service backend |
+| 7 Backend swap | done 2026-10-25 (112 tests) |
+| 4 Real-system contract | **next**: fixtures recorded, fake-vs-recording test and write-cycle script open |
+| 5 Field test | ha-foxess-openapi runs at the parents' HA; EMHASS and the dynamic tariff are open |
 | 6 Release 0.1.0 | after 5 |
 
 ## Test pyramid
@@ -146,6 +153,15 @@ outside any group and the daily re-trigger on master 1.91 remain field
 observations.
 
 ## Milestone 5: field test at the parents' installation
+
+Findings 2026-10-25: ha-foxess-openapi is installed and configured there
+(34 entities, live data OK, scheduler off, eight disabled placeholder
+groups with `maxSoc`). The Octopus contract is still the interim tariff
+`DEU-ELECTRICITY-DYNAMIC-OCTOPUS-LIGHT-12`, type `Simple`, fixed 31.5 ct/kWh
+"until customer received Smart Meter installed": the price sensor has no
+`rates` attribute yet. The field test with real prices waits for Octopus to
+switch the contract to the dynamic tariff. The EMHASS add-on is installed
+but not configured.
 
 Prerequisites outside this repo: `foxess_openapi` configured with the API
 key, `octopus_germany` for prices, EMHASS add-on with a 15-minute step and
