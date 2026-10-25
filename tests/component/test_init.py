@@ -57,8 +57,11 @@ async def test_setup_creates_live_sensors(
     soc_entity_id = registry.async_get_entity_id("sensor", DOMAIN, f"{SN}_SoC")
     assert soc_entity_id is not None
     assert hass.states.get(soc_entity_id).state == "9.0"
+    # FoxESS reports kW; EMHASS reads raw states and expects W, so expose W.
     load_entity_id = registry.async_get_entity_id("sensor", DOMAIN, f"{SN}_loadsPower")
-    assert hass.states.get(load_entity_id).state == "0.681"
+    load = hass.states.get(load_entity_id)
+    assert load.state == "681.0"
+    assert load.attributes["unit_of_measurement"] == "W"
 
     assert await hass.config_entries.async_unload(entry.entry_id)
     assert entry.state is ConfigEntryState.NOT_LOADED

@@ -30,14 +30,29 @@ if TYPE_CHECKING:
 MAX_STATE_LENGTH = 255
 
 
+# FoxESS reports power in kW. EMHASS reads raw sensor states and assumes W,
+# so the live power sensors are exposed in W.
+POWER_KEYS: frozenset[str] = frozenset(
+    {
+        "pvPower",
+        "loadsPower",
+        "gridConsumptionPower",
+        "feedinPower",
+        "batChargePower",
+        "batDischargePower",
+    }
+)
+KW_TO_W = 1000
+
+
 def _power(key: str, name: str) -> SensorEntityDescription:
     return SensorEntityDescription(
         key=key,
         name=name,
-        native_unit_of_measurement=UnitOfPower.KILO_WATT,
+        native_unit_of_measurement=UnitOfPower.WATT,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
+        suggested_display_precision=0,
     )
 
 
@@ -115,8 +130,15 @@ class LiveSensor(BridgeEntity["BridgeCoordinator"], SensorEntity):
 
     @property
     def native_value(self) -> float | str | None:
-        """Return the latest value for this variable."""
-        return self.coordinator.data.get(self.entity_description.key)
+        """Return the latest value for this variable, power converted to W."""
+        key = self.entity_description.key
+        value = self.coordinator.data.get(key)
+        if key in POWER_KEYS and value is not None:
+            try:
+                return round(float(value) * KW_TO_W, 1)
+            except TypeError, ValueError:
+                return None
+        return value
 
 
 def _summarise(groups: tuple[SchedulerGroup, ...]) -> str:
