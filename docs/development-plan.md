@@ -4,6 +4,30 @@ Test-driven, inside out: pure planning logic first, Home Assistant wiring
 second, real FoxESS API last. Every milestone ends with a green test run and
 one commit. Target: Home Assistant 2026.10.4 only.
 
+## Status (2026-10-25)
+
+| Milestone | State |
+| --- | --- |
+| 1 Planner core | done, `tests/unit` |
+| 2 Apply loop | done, `tests/component/test_apply.py` |
+| 3 Options, services, diagnostics | done |
+| 4 Real API tests | written; tier 3 waits for `FOX_API_KEY` in `.env`, tier 4 not yet run |
+| 5 Field test | not started; `examples/emhass/` prepared |
+| 6 Release 0.1.0 | not started |
+
+Decisions taken while implementing, beyond the original text:
+
+- A step counts as grid charging only when EMHASS also plans grid import
+  (`sensor.p_grid_forecast`). `p_batt` alone cannot tell PV surplus charging
+  from grid charging and would force-charge from the grid at noon.
+- "Clear the groups" is implemented as disabling the mode scheduler master
+  flag rather than writing an empty group list, whose acceptance by the API
+  is unknown (tier 4 records it).
+- A missing plan right after a Home Assistant restart also clears the
+  schedule. Conservative, costs at most one 15-minute gap until EMHASS
+  publishes again.
+- Live power sensors are exposed in W because EMHASS reads raw states.
+
 ## Test pyramid
 
 | Tier | What | How it runs | Speed |

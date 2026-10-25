@@ -1,0 +1,31 @@
+# EMHASS automations for the bridge. Append to automations.yaml or create them
+# in the UI. Timing: Octopus publishes the next day's prices around 17:00, so
+# the day-ahead run follows at 17:10. The MPC re-plans every 15 minutes with
+# the live SoC; publish-data runs right after so the bridge sees the plan.
+
+- alias: EMHASS day-ahead optimisation
+  description: Full-horizon plan once the next day's prices are known.
+  triggers:
+    - trigger: time
+      at: "17:10:00"
+  conditions:
+    - condition: template
+      value_template: >-
+        {{ (state_attr('sensor.octopus_ACCOUNT_electricity_price', 'rates') or []) | count > 48 }}
+  actions:
+    - action: rest_command.emhass_dayahead_optim
+    - delay: "00:00:20"
+    - action: rest_command.emhass_publish_data
+  mode: single
+
+- alias: EMHASS MPC every quarter hour
+  description: Rolling re-plan with the live battery SoC.
+  triggers:
+    - trigger: time_pattern
+      minutes: "/15"
+      seconds: 10
+  actions:
+    - action: rest_command.emhass_mpc_optim
+    - delay: "00:00:20"
+    - action: rest_command.emhass_publish_data
+  mode: single

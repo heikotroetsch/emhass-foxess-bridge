@@ -1,0 +1,52 @@
+# REST commands for the EMHASS add-on. Put under `rest_command:` in
+# configuration.yaml (or include this file). Replace the Octopus and bridge
+# entity ids with yours.
+#
+# The price list comes from the `rates` attribute of the octopus_germany price
+# sensor: sorted entries {start, end, value_inc_vat} in EUR/kWh, 15 minutes
+# each. Only entries from the current slot onwards are passed, and
+# prediction_horizon is set to their count so EMHASS plans exactly as far as
+# prices are known.
+
+rest_command:
+  emhass_dayahead_optim:
+    url: http://localhost:5000/action/dayahead-optim
+    method: POST
+    content_type: "application/json"
+    timeout: 300
+    payload: >-
+      {% set rates = state_attr('sensor.octopus_ACCOUNT_electricity_price', 'rates') or [] %}
+      {% set ns = namespace(prices=[]) %}
+      {% for r in rates if as_datetime(r.end) > now() %}
+        {% set ns.prices = ns.prices + [r.value_inc_vat] %}
+      {% endfor %}
+      {
+        "load_cost_forecast": {{ ns.prices | to_json }},
+        "prod_price_forecast": {{ (ns.prices | map('multiply', 0) | map('add', 0.08) | list) | to_json }},
+        "prediction_horizon": {{ ns.prices | count }}
+      }
+
+  emhass_mpc_optim:
+    url: http://localhost:5000/action/naive-mpc-optim
+    method: POST
+    content_type: "application/json"
+    timeout: 300
+    payload: >-
+      {% set rates = state_attr('sensor.octopus_ACCOUNT_electricity_price', 'rates') or [] %}
+      {% set ns = namespace(prices=[]) %}
+      {% for r in rates if as_datetime(r.end) > now() %}
+        {% set ns.prices = ns.prices + [r.value_inc_vat] %}
+      {% endfor %}
+      {
+        "load_cost_forecast": {{ ns.prices | to_json }},
+        "prod_price_forecast": {{ (ns.prices | map('multiply', 0) | map('add', 0.08) | list) | to_json }},
+        "prediction_horizon": {{ ns.prices | count }},
+        "soc_init": {{ (states('sensor.foxess_h3_5_0_e_battery_soc') | float(50)) / 100 }},
+        "soc_final": 0.3
+      }
+
+  emhass_publish_data:
+    url: http://localhost:5000/action/publish-data
+    method: POST
+    content_type: "application/json"
+    payload: "{}"
