@@ -20,7 +20,14 @@ from datetime import datetime, time, timedelta, tzinfo
 from itertools import pairwise
 from typing import TYPE_CHECKING, Any
 
-from .schedule import MAX_GROUPS, MIN_SOC, SchedulerGroup, WorkMode, validate_groups
+from .schedule import (
+    MAX_GROUPS,
+    MAX_SOC,
+    MIN_SOC,
+    SchedulerGroup,
+    WorkMode,
+    validate_groups,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
@@ -87,6 +94,7 @@ class PlannerSettings:
     max_groups: int = MAX_GROUPS
     horizon: timedelta = DEFAULT_HORIZON
     min_soc_on_grid: int = MIN_SOC
+    max_soc: int = MAX_SOC
 
 
 # --- parsing -----------------------------------------------------------------
@@ -281,6 +289,7 @@ def _groups_for_window(
             work_mode=WorkMode.FORCE_CHARGE,
             min_soc_on_grid=settings.min_soc_on_grid,
             fd_soc=settings.min_soc_on_grid,
+            max_soc=settings.max_soc,
         )
 
     if start.date() == last_minute.date():

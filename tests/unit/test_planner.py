@@ -259,6 +259,15 @@ def test_window_becomes_a_force_charge_group_with_inclusive_end_minute() -> None
     ]
 
 
+def test_force_charge_groups_carry_the_configured_max_soc() -> None:
+    groups = windows_to_groups(
+        [window("2026-01-16 02:00", "2026-01-16 05:00")],
+        PlannerSettings(max_soc=85),
+    )
+    assert groups[0].max_soc == 85
+    assert groups[0].to_api()["maxSoc"] == 85
+
+
 def test_window_crossing_midnight_is_split_in_two() -> None:
     groups = windows_to_groups(
         [window("2026-01-15 23:00", "2026-01-16 01:00")], PlannerSettings()

@@ -15,7 +15,7 @@ from custom_components.emhass_foxess_bridge.schedule import (
     validate_groups,
 )
 
-# One group exactly as /op/v0/device/scheduler/get returns it.
+# One group exactly as /op/v1/device/scheduler/get returns it (V1 adds maxSoc).
 API_GROUP = {
     "enable": 1,
     "startHour": 2,
@@ -26,6 +26,7 @@ API_GROUP = {
     "minSocOnGrid": 10,
     "fdSoc": 10,
     "fdPwr": 0,
+    "maxSoc": 100,
 }
 
 
@@ -40,8 +41,22 @@ def test_group_round_trips_through_the_api_shape() -> None:
 
 
 def test_from_api_ignores_fields_this_version_does_not_model() -> None:
-    group = SchedulerGroup.from_api({**API_GROUP, "maxSoc": 100})
-    assert "maxSoc" not in group.to_api()
+    group = SchedulerGroup.from_api({**API_GROUP, "someFutureField": 1})
+    assert "someFutureField" not in group.to_api()
+
+
+def test_max_soc_defaults_to_full_when_the_api_omits_it() -> None:
+    """Scheduler v0 responses have no maxSoc; treat them as 'charge to 100 %'."""
+    raw = {key: value for key, value in API_GROUP.items() if key != "maxSoc"}
+    group = SchedulerGroup.from_api(raw)
+    assert group.max_soc == 100
+    assert group.to_api()["maxSoc"] == 100
+
+
+def test_max_soc_can_limit_a_force_charge_group() -> None:
+    group = SchedulerGroup(time(2, 0), time(4, 59), WorkMode.FORCE_CHARGE, max_soc=80)
+    validate_groups([group])
+    assert group.to_api()["maxSoc"] == 80
 
 
 def test_disabled_group_is_sent_with_enable_zero() -> None:
@@ -113,6 +128,26 @@ def test_min_soc_on_grid_must_be_between_10_and_100(soc: int) -> None:
         validate_groups([group])
 
 
+@pytest.mark.parametrize("soc", [9, 101])
+def test_max_soc_must_be_between_10_and_100(soc: int) -> None:
+    group = SchedulerGroup(time(2, 0), time(4, 59), WorkMode.FORCE_CHARGE, max_soc=soc)
+    with pytest.raises(ScheduleError, match="maxSoc"):
+        validate_groups([group])
+
+
+def test_fd_soc_below_min_soc_on_grid_is_rejected() -> None:
+    """ha-foxess-openapi refuses fdSoc < minSocOnGrid; fail early with the same rule."""
+    group = SchedulerGroup(
+        time(17, 0),
+        time(18, 59),
+        WorkMode.FORCE_DISCHARGE,
+        min_soc_on_grid=20,
+        fd_soc=15,
+    )
+    with pytest.raises(ScheduleError, match="fdSoc"):
+        validate_groups([group])
+
+
 def test_times_must_have_minute_resolution() -> None:
     with pytest.raises(ScheduleError, match="whole minutes"):
         validate_groups([charge(time(2, 0, 30), time(4, 59))])
@@ -138,6 +173,18 @@ def test_discharge_fields_matter_for_force_discharge() -> None:
         time(17, 0), time(18, 59), WorkMode.FORCE_DISCHARGE, fd_soc=20, fd_pwr=5000
     )
     assert not groups_equal([a], [b])
+
+
+def test_max_soc_matters_for_force_charge() -> None:
+    a = SchedulerGroup(time(2, 0), time(4, 59), WorkMode.FORCE_CHARGE, max_soc=100)
+    b = SchedulerGroup(time(2, 0), time(4, 59), WorkMode.FORCE_CHARGE, max_soc=80)
+    assert not groups_equal([a], [b])
+
+
+def test_max_soc_is_ignored_outside_force_charge() -> None:
+    a = SchedulerGroup(time(5, 0), time(23, 59), max_soc=100)
+    b = SchedulerGroup(time(5, 0), time(23, 59), max_soc=90)
+    assert groups_equal([a], [b])
 
 
 def test_disabled_groups_are_ignored_when_comparing() -> None:

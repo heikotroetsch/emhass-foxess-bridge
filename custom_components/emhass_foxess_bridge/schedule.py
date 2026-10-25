@@ -6,6 +6,7 @@ tested in milliseconds and reused by other front ends.
 
 A group is a time-of-day range that repeats every day. The end minute is
 inclusive, so the FoxESS app writes a window ending at 05:00 as ``04:59``.
+The field set is scheduler V1: ``maxSoc`` caps a ``ForceCharge`` group.
 """
 
 from __future__ import annotations
@@ -49,11 +50,13 @@ class SchedulerGroup:
     min_soc_on_grid: int = MIN_SOC
     fd_soc: int = MIN_SOC
     fd_pwr: int = 0
+    max_soc: int = MAX_SOC
     enabled: bool = True
 
     @classmethod
     def from_api(cls, data: Mapping[str, Any]) -> SchedulerGroup:
         """Build a group from a ``/scheduler/get`` entry; unknown keys are ignored."""
+        max_soc = data.get("maxSoc")
         return cls(
             start=time(int(data["startHour"]), int(data["startMinute"])),
             end=time(int(data["endHour"]), int(data["endMinute"])),
@@ -61,6 +64,7 @@ class SchedulerGroup:
             min_soc_on_grid=int(data.get("minSocOnGrid", MIN_SOC)),
             fd_soc=int(data.get("fdSoc", MIN_SOC)),
             fd_pwr=int(data.get("fdPwr", 0)),
+            max_soc=MAX_SOC if max_soc is None else int(max_soc),
             enabled=bool(int(data.get("enable", 1))),
         )
 
@@ -76,6 +80,7 @@ class SchedulerGroup:
             "minSocOnGrid": self.min_soc_on_grid,
             "fdSoc": self.fd_soc,
             "fdPwr": self.fd_pwr,
+            "maxSoc": self.max_soc,
         }
 
     def __str__(self) -> str:
@@ -94,12 +99,16 @@ def _validate_one(group: SchedulerGroup) -> None:
     for label, value in (
         ("minSocOnGrid", group.min_soc_on_grid),
         ("fdSoc", group.fd_soc),
+        ("maxSoc", group.max_soc),
     ):
         if not MIN_SOC <= value <= MAX_SOC:
             msg = (
                 f"{group}: {label} must be between {MIN_SOC} and {MAX_SOC}, got {value}"
             )
             raise ScheduleError(msg)
+    if group.fd_soc < group.min_soc_on_grid:
+        msg = f"{group}: fdSoc must not be below minSocOnGrid"
+        raise ScheduleError(msg)
     if group.fd_pwr < 0:
         msg = f"{group}: fdPwr must not be negative"
         raise ScheduleError(msg)
@@ -129,6 +138,8 @@ def _comparable(group: SchedulerGroup) -> tuple[Any, ...]:
     )
     if group.work_mode is WorkMode.FORCE_DISCHARGE:
         key += (group.fd_soc, group.fd_pwr)
+    if group.work_mode is WorkMode.FORCE_CHARGE:
+        key += (group.max_soc,)
     return key
 
 
