@@ -31,4 +31,4 @@ max-complexity = 25
 # Real-API tiers print their findings on purpose (run with -s).
 "tests/contract/**" = ["T201"]
 # Operator scripts: they print, they use literal numbers, docstrings per function add nothing.
-"scripts/**" = ["T201", "D103", "PLR2004", "INP001", "S310"]
+"scripts/**" = ["T201", "D103", "PLR2004", "PLR0915", "INP001", "S310"]
