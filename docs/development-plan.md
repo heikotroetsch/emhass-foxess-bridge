@@ -61,7 +61,7 @@ one commit. Target: Home Assistant 2026.10.4 only.
 | 7 Backend swap | done 2026-10-25 (112 tests) |
 | 4 Real-system contract | done: recordings, `tests/contract`, write cycle run twice on 2026-10-25 with Heiko's go, findings below |
 | 5 Field test | dry-run stage running at the parents' HA since 2026-10-25 23:01: bridge, EMHASS 0.18.7 (configured), W template sensors, REST commands and automations installed; EMHASS waits for sensor history, the plan waits for the dynamic tariff |
-| 6 Release 0.1.0 | repo prepared 2026-10-25: CI (tests, lint, hassfest, HACS), release workflow with HACS zip, changelog, templates, user README, `scripts/release`; open: GitHub remote, screenshots, first tag after the field test |
+| 6 Release | GitHub repo created 2026-10-25 (private), Lint/Tests/hassfest green, **v0.1.0-beta.1 pre-release published with the HACS zip**; open: switch the repository to public (then the HACS validation job passes), screenshots, 0.1.0 after the field test |
 
 ## Test pyramid
 
@@ -202,10 +202,17 @@ on a published release after checking that the tag equals the manifest
 version; `hacs.json` has `zip_release` and `render_readme`;
 `scripts/release X.Y.Z` bumps, rolls `CHANGELOG.md`, commits and tags.
 
-Remaining: create the GitHub repository and push, add screenshots of the
-entities and a dashboard card to the README, run the field test to the
-acceptance criteria, then `scripts/release 0.1.0`, publish the release and
-post in the ha-foxess-openapi and EMHASS communities.
+Done 2026-10-25: repository `heikotroetsch/emhass-foxess-bridge` created
+(private, description, topics, issues), workflows green except the HACS job,
+which refuses private repositories; `v0.1.0-beta.1` published as pre-release
+with `emhass_foxess_bridge.zip` attached by the Release workflow. The
+workflows need `permissions: contents: read` to check out a private repo.
+
+Remaining: make the repository public (Heiko, blocked for the assistant),
+re-run Validate, add screenshots of the entities and a dashboard card to the
+README, run the field test to the acceptance criteria, then
+`scripts/release 0.1.0`, publish the release and post in the
+ha-foxess-openapi and EMHASS communities.
 
 ## Later
 
